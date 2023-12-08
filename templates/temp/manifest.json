@@ -1,0 +1,9 @@
+{
+  "repos": [
+    {
+      "id": "temp",
+      "organisation": "lnbits",
+      "repository": "template-extension"
+    }
+  ]
+}
