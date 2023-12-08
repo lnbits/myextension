@@ -24,4 +24,4 @@ class Temp(BaseModel):
         return cls(**dict(row))
 
 class CreateUpdateItemData(BaseModel):
-    items: List[Item]
+    items: List[Temp]
