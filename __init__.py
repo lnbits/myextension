@@ -25,7 +25,7 @@ temp_static_files = [
 def temp_renderer():
     return temp_renderer(["temp/temps"])
 
-
+from .lnurl import *
 from .tasks import wait_for_paid_invoices
 from .views import *
 from .views_api import *
