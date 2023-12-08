@@ -1,0 +1,1150 @@
+{% extends "base.html" %} {% from "macros.jinja" import window_vars with context
+%} {% block page %}
+<div class="row q-col-gutter-md">
+  <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
+    <q-card>
+      <q-card-section>
+        <q-btn unelevated color="primary" @click="formDialog.show = true"
+          >New Temp</q-btn
+        >
+      </q-card-section>
+    </q-card>
+
+    <q-card>
+      <q-card-section>
+        <div class="row items-center no-wrap q-mb-md">
+          <div class="col">
+            <h5 class="text-subtitle1 q-my-none">Temp</h5>
+          </div>
+          <div class="col-auto">
+            <q-btn flat color="grey" @click="exportCSV">Export to CSV</q-btn>
+          </div>
+        </div>
+        <q-table
+          dense
+          flat
+          :data="temps"
+          row-key="id"
+          :columns="tempsTable.columns"
+          :pagination.sync="tempsTable.pagination"
+        >
+          <temp v-slot:header="props">
+            <q-tr :props="props">
+              <q-th auto-width></q-th>
+              <q-th auto-width></q-th>
+              <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                ${ col.label }
+              </q-th>
+              <q-th auto-width>Tip Wallet</q-th>
+              <q-th auto-width>Tip Options %</q-th>
+              <q-th auto-width>Withdraw PIN</q-th>
+              <q-th auto-width>Withdraw Limit</q-th>
+              <q-th auto-width>Withdraw Premium</q-th>
+              <q-th auto-width></q-th>
+              <q-th auto-width></q-th>
+            </q-tr>
+          </temp>
+
+          <temp v-slot:body="props">
+            <q-tr :props="props">
+              <q-td auto-width>
+                <q-btn
+                  size="sm"
+                  color="accent"
+                  round
+                  dense
+                  @click="props.expand = !props.expand"
+                  :icon="props.expand ? 'expand_less' : 'expand_more'"
+                />
+              </q-td>
+              <q-td auto-width>
+                <q-btn
+                  unelevated
+                  dense
+                  size="sm"
+                  icon="qr_code"
+                  :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+                  class="q-mr-sm"
+                  @click="openUrlDialog(props.row.id)"
+                  ><q-tooltip>PoS QR</q-tooltip></q-btn
+                >
+                <q-btn
+                  unelevated
+                  dense
+                  size="sm"
+                  icon="launch"
+                  :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+                  type="a"
+                  :href="props.row.temp"
+                  target="_blank"
+                  ><q-tooltip>Open PoS</q-tooltip></q-btn
+                >
+              </q-td>
+              <q-td auto-width>
+                <q-btn
+                  unelevated
+                  dense
+                  size="md"
+                  copy="copy"
+                  @click="copyText(props.row.id)"
+                  ><q-tooltip>Click to copy</q-tooltip
+                  >${props.row.id.substring(0,6)}...</q-btn
+                >
+              </q-td>
+
+              <q-td
+                v-for="col in props.cols"
+                v-if="col.name != 'id'"
+                :key="col.name"
+                :props="props"
+              >
+                ${ (col.name == 'tip_options' && col.value ?
+                JSON.parse(col.value).join(", ") : col.value) }
+              </q-td>
+              <q-td v-if="props.row.tip_wallet != ''" auto-width>
+                <q-btn
+                  unelevated
+                  dense
+                  size="md"
+                  copy="copy"
+                  @click="copyText(props.row.tip_wallet)"
+                  ><q-tooltip>Click to copy</q-tooltip
+                  >${props.row.tip_wallet.substring(0,6)}...</q-btn
+                >
+              </q-td>
+              <q-td v-else auto-width> N/A </q-td>
+              <q-td v-if="props.row.tip_wallet != ''" auto-width>
+                ${props.row.tip_options}
+              </q-td>
+              <q-td v-else auto-width>N/A </q-td>
+              <q-td v-if="props.row.withdrawlimit >= 1" auto-width>
+                ${props.row.withdrawpin}
+              </q-td>
+              <q-td v-else auto-width> N/A </q-td>
+              <q-td v-if="props.row.withdrawlimit >= 1" auto-width>
+                ${props.row.withdrawlimit}
+              </q-td>
+              <q-td v-else auto-width> N/A </q-td>
+              <q-td v-if="props.row.withdrawpremium > 0" auto-width>
+                ${props.row.withdrawpremium}%
+              </q-td>
+              <q-td v-else auto-width> 0 </q-td>
+              <q-td auto-width>
+                <q-btn
+                  flat
+                  dense
+                  size="xs"
+                  @click="updateTPosForm(props.row.id)"
+                  icon="edit"
+                  color="blue"
+                ></q-btn>
+              </q-td>
+              <q-td auto-width>
+                <q-btn
+                  flat
+                  dense
+                  size="xs"
+                  @click="deleteTemp(props.row.id)"
+                  icon="cancel"
+                  color="pink"
+                ></q-btn>
+              </q-td>
+            </q-tr>
+            <q-tr v-show="props.expand" :props="props">
+              <q-td colspan="100%">
+                <div class="row items-center q-mb-lg">
+                  <div class="col-12">
+                    <q-tabs
+                      v-model="tab"
+                      no-caps
+                      class="bg-dark text-white shadow-2"
+                    >
+                      <q-tab name="items" label="Items"></q-tab>
+                    </q-tabs>
+                    <q-tab-panels v-model="tab">
+                      <q-tab-panel name="items">
+                        <div>
+                          <div class="row items-center no-wrap q-mb-md">
+                            <div class="col-12 q-pr-lg">
+                              <q-btn
+                                color="primary"
+                                unelevated
+                                @click="openItemDialog(props.row.id)"
+                                class="float-left q-my-sm"
+                                >Add Item</q-btn
+                              >
+                              <q-btn
+                                color="grey"
+                                outline
+                                unelevated
+                                @click="deleteAllItems(props.row.id)"
+                                class="float-left q-my-sm q-ml-sm"
+                                >Delete All</q-btn
+                              >
+                              <q-btn-dropdown
+                                class="float-right q-my-sm"
+                                outline
+                                color="primary"
+                                label="Import/Export"
+                              >
+                                <q-list>
+                                  <q-item
+                                    clickable
+                                    v-close-popup
+                                    @click="importJSON(props.row.id)"
+                                  >
+                                    <input
+                                      id="import"
+                                      type="file"
+                                      accept=".json"
+                                      style="display: none"
+                                    />
+                                    <q-item-section>
+                                      <q-item-label>Import</q-item-label>
+                                      <q-item-label caption
+                                        >Import a JSON file</q-item-label
+                                      >
+                                    </q-item-section>
+                                  </q-item>
+
+                                  <q-item
+                                    clickable
+                                    v-close-popup
+                                    @click="exportJSON(props.row.id)"
+                                  >
+                                    <q-item-section>
+                                      <q-item-label>Export</q-item-label>
+                                      <q-item-label caption
+                                        >Export a JSON file</q-item-label
+                                      >
+                                    </q-item-section>
+                                  </q-item>
+                                </q-list>
+                              </q-btn-dropdown>
+                            </div>
+                          </div>
+
+                          <div class="row items-center no-wrap q-mb-md">
+                            <div class="col-12">
+                              <q-table
+                                flat
+                                dense
+                                :data="itemsArray(props.row.id)"
+                                row-key="id"
+                                :columns="itemsTable.columns"
+                                :pagination.sync="itemsTable.pagination"
+                              >
+                                <temp v-slot:body="props">
+                                  <q-tr :props="props">
+                                    <q-td auto-width>
+                                      <q-btn
+                                        size="sm"
+                                        color="pink"
+                                        dense
+                                        @click="deleteItem(props.row.id)"
+                                        icon="delete"
+                                      ></q-btn>
+                                    </q-td>
+                                    <q-td auto-width>
+                                      <q-btn
+                                        size="sm"
+                                        color="accent"
+                                        dense
+                                        @click="openItemDialog(props.row.id)"
+                                        icon="edit"
+                                      ></q-btn>
+                                    </q-td>
+
+                                    <q-td key="id" :props="props">
+                                      ${props.row.id.split(':')[1]}
+                                    </q-td>
+                                    <q-td key="title" :props="props">
+                                      ${props.row.title}
+                                    </q-td>
+                                    <q-td key="price" :props="props">
+                                      ${itemFormatPrice(props.row.price,
+                                      props.row.id)}
+                                    </q-td>
+                                    <q-td key="disabled" :props="props">
+                                      ${props.row.disabled}
+                                    </q-td>
+                                  </q-tr>
+                                </temp>
+                              </q-table>
+                            </div>
+                          </div>
+                        </div>
+                      </q-tab-panel>
+                    </q-tab-panels>
+                  </div>
+                </div>
+              </q-td>
+            </q-tr>
+          </temp>
+        </q-table>
+      </q-card-section>
+    </q-card>
+  </div>
+
+  <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
+    <q-card>
+      <q-card-section>
+        <h6 class="text-subtitle1 q-my-none">{{SITE_TITLE}} Temp extension</h6>
+      </q-card-section>
+      <q-card-section class="q-pa-none">
+        <q-separator></q-separator>
+        <q-list>
+          {% include "temp/_api_docs.html" %}
+          <q-separator></q-separator>
+          {% include "temp/_temp.html" %}
+        </q-list>
+      </q-card-section>
+    </q-card>
+  </div>
+
+  <q-dialog v-model="formDialog.show" position="top" @hide="closeFormDialog">
+    <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
+      <q-form @submit="sendTPosData" class="q-gutter-md">
+        <q-input
+          filled
+          dense
+          v-model.trim="formDialog.data.name"
+          label="Name"
+          placeholder="Tiago's PoS"
+        ></q-input>
+        <q-select
+          filled
+          dense
+          emit-value
+          v-model="formDialog.data.wallet"
+          :options="g.user.walletOptions"
+          label="Wallet *"
+        ></q-select>
+        <q-select
+          filled
+          dense
+          emit-value
+          v-model="formDialog.data.currency"
+          :options="currencyOptions"
+          label="Currency *"
+        ></q-select>
+        <div class="row">
+          <div class="col">
+            <q-checkbox
+              v-model="formDialog.advanced.tips"
+              label="Enable tips"
+            ></q-checkbox>
+          </div>
+          <div class="col">
+            <q-checkbox
+              v-model="formDialog.advanced.otc"
+              label="Enable selling Bitcoin (ATM)"
+            ></q-checkbox>
+          </div>
+        </div>
+        <temp v-if="formDialog.advanced.tips">
+          <q-select
+            filled
+            dense
+            emit-value
+            v-model="formDialog.data.tip_wallet"
+            :options="g.user.walletOptions"
+            label="Tip Wallet"
+          ></q-select>
+          <q-select
+            filled
+            multiple
+            dense
+            emit-value
+            v-model="formDialog.data.tip_options"
+            v-if="formDialog.data.tip_wallet"
+            use-input
+            use-chips
+            multiple
+            hide-dropdown-icon
+            input-debounce="0"
+            new-value-mode="add-unique"
+            label="Tip % Options (hit enter to add values)"
+            ><q-tooltip>Hit enter to add values</q-tooltip>
+            <temp v-slot:hint>
+              You can leave this blank. A default rounding option is available
+              (round amount to a value)
+            </temp>
+          </q-select>
+        </temp>
+        <temp v-if="formDialog.advanced.otc">
+          <q-input
+            filled
+            dense
+            v-model.number="formDialog.data.withdrawlimit"
+            type="number"
+            label="Max amount to be sold daily (sats)"
+          ></q-input>
+          <q-input
+            filled
+            dense
+            v-model.number="formDialog.data.withdrawpin"
+            type="number"
+            label="Withdraw PIN"
+          ></q-input>
+          <q-input
+            filled
+            dense
+            v-model.number="formDialog.data.withdrawbtwn"
+            type="number"
+            min="0"
+            label="Time between withdraws (minutes)"
+          ></q-input>
+          <q-input
+            filled
+            dense
+            v-model.number="formDialog.data.withdrawpremium"
+            type="number"
+            label="Withdraw premium"
+            step="0.01"
+            min="0.01"
+          ></q-input>
+        </temp>
+
+        <div class="row q-mt-lg">
+          <q-btn
+            v-if="formDialog.data.id"
+            unelevated
+            color="primary"
+            type="submit"
+            >Update Temp</q-btn
+          >
+          <q-btn
+            v-else
+            unelevated
+            color="primary"
+            :disable="formDialog.data.currency == null || formDialog.data.name == null"
+            type="submit"
+            >Create Temp</q-btn
+          >
+          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
+            >Cancel</q-btn
+          >
+        </div>
+      </q-form>
+    </q-card>
+  </q-dialog>
+  <q-dialog v-model="itemDialog.show" position="top" @hide="closeItemDialog">
+    <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
+      <q-form @submit="addItems" class="q-gutter-md">
+        <q-input
+          filled
+          dense
+          v-model.trim="itemDialog.data.title"
+          label="Title *"
+        ></q-input>
+        <q-input
+          filled
+          dense
+          v-model.trim="itemDialog.data.description"
+          label="Description"
+        ></q-input>
+        <q-input
+          filled
+          dense
+          v-model.trim="itemDialog.data.image"
+          label="Image URL"
+        ></q-input>
+        <q-input
+          filled
+          dense
+          v-model.number="itemDialog.data.price"
+          :label="`Price (${itemDialog.data.currency})*`"
+        ></q-input>
+        <q-input
+          filled
+          dense
+          v-model.number="itemDialog.data.tax"
+          label="Tax %"
+        ></q-input>
+        <q-checkbox
+          v-model="itemDialog.data.disabled"
+          label="Disable"
+        ></q-checkbox>
+        <div class="row q-mt-lg">
+          <q-btn
+            unelevated
+            color="primary"
+            :disable="!Boolean(itemDialog.data.title) || !Boolean(itemDialog.data.price)"
+            type="submit"
+            >${itemDialog.data.id ? 'Update Item' : 'Create Item'}</q-btn
+          >
+          <q-btn
+            v-close-popup
+            @hide="closeItemDialog"
+            flat
+            color="grey"
+            class="q-ml-auto"
+            >Cancel</q-btn
+          >
+        </div>
+      </q-form>
+    </q-card>
+  </q-dialog>
+  <q-dialog v-model="urlDialog.show" position="top">
+    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+      <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
+        <lnbits-qrcode :value="urlDialog.data.shareUrl"></lnbits-qrcode>
+      </q-responsive>
+      <div class="text-center q-mb-xl">
+        <p style="word-break: break-all">
+          <strong>${ urlDialog.data.name }</strong><br />${
+          urlDialog.data.shareUrl }
+        </p>
+      </div>
+      <div class="row q-mt-lg">
+        <q-btn
+          outline
+          color="grey"
+          @click="copyText(urlDialog.data.shareUrl, 'Temp URL copied to clipboard!')"
+          >Copy URL</q-btn
+        >
+        <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
+      </div>
+    </q-card>
+  </q-dialog>
+  <q-dialog v-model="fileDataDialog.show" position="top">
+    <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+      <q-card-section>
+        <h6 class="text-subtitle1 q-my-none">
+          Importing ${fileDataDialog?.count} items
+        </h6>
+      </q-card-section>
+      <q-list bordered padding separator>
+        <q-item v-for="item in fileDataDialog.data" :key="item.name">
+          <q-item-section v-if="item.image" top avatar>
+            <q-avatar>
+              <img :src="item.image" style="object-fit: scale-down" />
+            </q-avatar>
+          </q-item-section>
+
+          <q-item-section>
+            <q-item-label>${item.title}</q-item-label>
+            <q-item-label v-if="item.description" caption
+              >${item.description}</q-item-label
+            >
+          </q-item-section>
+
+          <q-item-section side top>
+            <q-badge :label="item.formattedPrice" />
+          </q-item-section>
+        </q-item>
+      </q-list>
+      <div class="row q-mt-lg">
+        <q-btn outline color="primary" @click="fileDataDialog.import"
+          >Import</q-btn
+        >
+        <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
+      </div>
+    </q-card>
+  </q-dialog>
+</div>
+{% endblock %} {% block scripts %} {{ window_vars(user) }}
+<script>
+  const mapTemp = obj => {
+    obj.date = Quasar.utils.date.formatDate(
+      new Date(obj.time * 1000),
+      'YYYY-MM-DD HH:mm'
+    )
+    obj.temp = ['/temp/', obj.id].join('')
+    obj.shareUrl = [
+      window.location.protocol,
+      '//',
+      window.location.host,
+      obj.temp
+    ].join('')
+    obj.items = JSON.parse(obj.items)
+    obj.itemsMap = new Map()
+    obj.items.forEach((item, idx) => {
+      let id = `${obj.id}:${idx + 1}`
+      obj.itemsMap.set(id, {...item, id})
+    })
+    return obj
+  }
+
+  new Vue({
+    el: '#vue',
+    mixins: [windowMixin],
+    delimiters: ['${', '}'],
+    data: function () {
+      return {
+        temps: [],
+        currencyOptions: [
+          'USD',
+          'EUR',
+          'GBP',
+          'AED',
+          'AFN',
+          'ALL',
+          'AMD',
+          'ANG',
+          'AOA',
+          'ARS',
+          'AUD',
+          'AWG',
+          'AZN',
+          'BAM',
+          'BBD',
+          'BDT',
+          'BGN',
+          'BHD',
+          'BIF',
+          'BMD',
+          'BND',
+          'BOB',
+          'BRL',
+          'BSD',
+          'BTN',
+          'BWP',
+          'BYN',
+          'BZD',
+          'CAD',
+          'CDF',
+          'CHF',
+          'CLF',
+          'CLP',
+          'CNH',
+          'CNY',
+          'COP',
+          'CRC',
+          'CUC',
+          'CUP',
+          'CVE',
+          'CZK',
+          'DJF',
+          'DKK',
+          'DOP',
+          'DZD',
+          'EGP',
+          'ERN',
+          'ETB',
+          'EUR',
+          'FJD',
+          'FKP',
+          'GBP',
+          'GEL',
+          'GGP',
+          'GHS',
+          'GIP',
+          'GMD',
+          'GNF',
+          'GTQ',
+          'GYD',
+          'HKD',
+          'HNL',
+          'HRK',
+          'HTG',
+          'HUF',
+          'IDR',
+          'ILS',
+          'IMP',
+          'INR',
+          'IQD',
+          'IRR',
+          'IRT',
+          'ISK',
+          'JEP',
+          'JMD',
+          'JOD',
+          'JPY',
+          'KES',
+          'KGS',
+          'KHR',
+          'KMF',
+          'KPW',
+          'KRW',
+          'KWD',
+          'KYD',
+          'KZT',
+          'LAK',
+          'LBP',
+          'LKR',
+          'LRD',
+          'LSL',
+          'LYD',
+          'MAD',
+          'MDL',
+          'MGA',
+          'MKD',
+          'MMK',
+          'MNT',
+          'MOP',
+          'MRO',
+          'MUR',
+          'MVR',
+          'MWK',
+          'MXN',
+          'MYR',
+          'MZN',
+          'NAD',
+          'NGN',
+          'NIO',
+          'NOK',
+          'NPR',
+          'NZD',
+          'OMR',
+          'PAB',
+          'PEN',
+          'PGK',
+          'PHP',
+          'PKR',
+          'PLN',
+          'PYG',
+          'QAR',
+          'RON',
+          'RSD',
+          'RUB',
+          'RWF',
+          'SAR',
+          'SBD',
+          'SCR',
+          'SDG',
+          'SEK',
+          'SGD',
+          'SHP',
+          'SLL',
+          'SOS',
+          'SRD',
+          'SSP',
+          'STD',
+          'SVC',
+          'SYP',
+          'SZL',
+          'THB',
+          'TJS',
+          'TMT',
+          'TND',
+          'TOP',
+          'TRY',
+          'TTD',
+          'TWD',
+          'TZS',
+          'UAH',
+          'UGX',
+          'USD',
+          'UYU',
+          'UZS',
+          'VEF',
+          'VES',
+          'VND',
+          'VUV',
+          'WST',
+          'XAF',
+          'XAG',
+          'XAU',
+          'XCD',
+          'XDR',
+          'XOF',
+          'XPD',
+          'XPF',
+          'XPT',
+          'YER',
+          'ZAR',
+          'ZMW',
+          'ZWL'
+        ],
+        tempsTable: {
+          columns: [
+            {name: 'id', align: 'left', label: 'ID', field: 'id'},
+            {name: 'name', align: 'left', label: 'Name', field: 'name'},
+            {
+              name: 'currency',
+              align: 'left',
+              label: 'Currency',
+              field: 'currency'
+            }
+          ],
+          pagination: {
+            rowsPerPage: 10
+          }
+        },
+        formDialog: {
+          show: false,
+          data: {
+            withdrawpin: 878787,
+            tip_options: [],
+            withdrawbtwn: 10
+          },
+          advanced: {
+            tips: false,
+            otc: false
+          }
+        },
+        itemDialog: {
+          show: false,
+          data: {
+            title: '',
+            image: '',
+            price: '',
+            disabled: false
+          }
+        },
+        tab: 'items',
+        itemsTable: {
+          columns: [
+            {
+              name: 'delete',
+              align: 'left',
+              label: '',
+              field: ''
+            },
+            {
+              name: 'edit',
+              align: 'left',
+              label: '',
+              field: ''
+            },
+
+            {
+              name: 'id',
+              align: 'left',
+              label: 'ID',
+              field: 'id'
+            },
+            {
+              name: 'title',
+              align: 'left',
+              label: 'Title',
+              field: 'title'
+            },
+            {
+              name: 'price',
+              align: 'left',
+              label: 'Price',
+              field: 'price'
+            },
+            {
+              name: 'disabled',
+              align: 'left',
+              label: 'Disabled',
+              field: 'disabled'
+            }
+          ],
+          pagination: {
+            rowsPerPage: 10
+          }
+        },
+        fileDataDialog: {
+          show: false,
+          data: {},
+          import: () => {}
+        },
+        urlDialog: {
+          show: false,
+          data: {}
+        }
+      }
+    },
+    methods: {
+      closeFormDialog() {
+        this.formDialog.show = false
+        this.formDialog.data = {
+          withdrawpin: 878787,
+          tip_options: [],
+          withdrawbtwn: 10
+        }
+      },
+      getTemps: function () {
+        var self = this
+
+        LNbits.api
+          .request(
+            'GET',
+            '/temp/api/v1/temps?all_wallets=true',
+            this.g.user.wallets[0].inkey
+          )
+          .then(function (response) {
+            self.temps = response.data.map(function (obj) {
+              return mapTemp(obj)
+            })
+          })
+      },
+      sendTPosData() {
+        const data = {
+          ...this.formDialog.data,
+          tip_options:
+            this.formDialog.advanced.tips && this.formDialog.data.tip_options
+              ? JSON.stringify(
+                  this.formDialog.data.tip_options.map(str => parseInt(str))
+                )
+              : JSON.stringify([]),
+          tip_wallet:
+            (this.formDialog.advanced.tips &&
+              this.formDialog.data.tip_wallet) ||
+            '',
+          items: JSON.stringify(this.formDialog.data.items)
+        }
+        // delete withdrawbtwn if value is empty string, defaults to 10 minutes
+        if (this.formDialog.data.withdrawbtwn == '') {
+          delete data.withdrawbtwn
+        }
+        if (!this.formDialog.advanced.otc) {
+          data.withdrawlimit = null
+          data.withdrawpin = null
+          data.withdrawpremium = null
+        }
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: this.formDialog.data.wallet
+        })
+        if (data.id) {
+          this.updateTPos(wallet, data)
+        } else {
+          this.createTemp(wallet, data)
+        }
+      },
+      updateTPosForm(tempId) {
+        const temp = _.findWhere(this.temps, {id: tempId})
+        this.formDialog.data = {
+          ...temp,
+          tip_options: JSON.parse(temp.tip_options)
+        }
+        if (this.formDialog.data.tip_wallet != '') {
+          this.formDialog.advanced.tips = true
+        }
+        if (this.formDialog.data.withdrawlimit >= 1) {
+          this.formDialog.advanced.otc = true
+        }
+        this.formDialog.show = true
+      },
+      createTemp(wallet, data) {
+        LNbits.api
+          .request('POST', '/temp/api/v1/temps', wallet.inkey, data)
+          .then(response => {
+            this.temps.push(mapTemp(response.data))
+            this.closeFormDialog()
+          })
+          .catch(error => {
+            LNbits.utils.notifyApiError(error)
+          })
+      },
+      updateTPos(wallet, data) {
+        LNbits.api
+          .request(
+            'PUT',
+            `/temp/api/v1/temps/${data.id}`,
+            wallet.adminkey,
+            data
+          )
+          .then(response => {
+            this.temps = _.reject(this.temps, obj => {
+              return obj.id == data.id
+            })
+            this.temps.push(mapTemp(response.data))
+            this.closeFormDialog()
+          })
+          .catch(error => {
+            LNbits.utils.notifyApiError(error)
+          })
+      },
+      deleteTemp: function (tempId) {
+        var self = this
+        var temp = _.findWhere(this.temps, {id: tempId})
+
+        LNbits.utils
+          .confirmDialog('Are you sure you want to delete this Temp?')
+          .onOk(function () {
+            LNbits.api
+              .request(
+                'DELETE',
+                '/temp/api/v1/temps/' + tempId,
+                _.findWhere(self.g.user.wallets, {id: temp.wallet}).adminkey
+              )
+              .then(function (response) {
+                self.temps = _.reject(self.temps, function (obj) {
+                  return obj.id == tempId
+                })
+              })
+              .catch(function (error) {
+                LNbits.utils.notifyApiError(error)
+              })
+          })
+      },
+      exportCSV: function () {
+        LNbits.utils.exportCSV(this.tempsTable.columns, this.temps)
+      },
+      itemsArray(tempId) {
+        const temp = _.findWhere(this.temps, {id: tempId})
+        return [...temp.itemsMap.values()]
+      },
+      itemFormatPrice(price, id) {
+        const temp = id.split(':')[0]
+        const currency = _.findWhere(this.temps, {id: temp}).currency
+        return LNbits.utils.formatCurrency(Number(price).toFixed(2), currency)
+      },
+      openItemDialog(id) {
+        const [tempId, itemId] = id.split(':')
+        const temp = _.findWhere(this.temps, {id: tempId})
+        if (itemId) {
+          const item = temp.itemsMap.get(id)
+          this.itemDialog.data = {
+            ...item,
+            temp: tempId
+          }
+        } else {
+          this.itemDialog.data.temp = tempId
+        }
+        this.itemDialog.data.currency = temp.currency
+        this.itemDialog.show = true
+      },
+      closeItemDialog() {
+        this.itemDialog.show = false
+        this.itemDialog.data = {
+          title: '',
+          image: '',
+          price: '',
+          disabled: false
+        }
+      },
+      deleteItem(id) {
+        const [tempId, itemId] = id.split(':')
+        const temp = _.findWhere(this.temps, {id: tempId})
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: temp.wallet
+        })
+        LNbits.utils
+          .confirmDialog('Are you sure you want to delete this item?')
+          .onOk(() => {
+            temp.itemsMap.delete(id)
+            const data = {
+              items: [...temp.itemsMap.values()]
+            }
+            this.updateTempItems(temp.id, wallet, data)
+          })
+      },
+      addItems() {
+        const temp = _.findWhere(this.temps, {id: this.itemDialog.data.temp})
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: temp.wallet
+        })
+        if (this.itemDialog.data.id) {
+          temp.itemsMap.set(this.itemDialog.data.id, this.itemDialog.data)
+        }
+        const data = {
+          items: this.itemDialog.data.id
+            ? [...temp.itemsMap.values()]
+            : [...temp.items, this.itemDialog.data]
+        }
+        this.updateTempItems(temp.id, wallet, data)
+      },
+      deleteAllItems(tempId) {
+        const temp = _.findWhere(this.temps, {id: tempId})
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: temp.wallet
+        })
+        LNbits.utils
+          .confirmDialog('Are you sure you want to delete ALL items?')
+          .onOk(() => {
+            temp.itemsMap.clear()
+            const data = {
+              items: []
+            }
+            this.updateTempItems(temp.id, wallet, data)
+          })
+      },
+      updateTempItems(tempId, wallet, data) {
+        LNbits.api
+          .request(
+            'PUT',
+            `/temp/api/v1/temps/${tempId}/items`,
+            wallet.adminkey,
+            data
+          )
+          .then(response => {
+            this.temps = _.reject(this.temps, obj => {
+              return obj.id == tempId
+            })
+            this.temps.push(mapTemp(response.data))
+            this.closeItemDialog()
+          })
+          .catch(error => {
+            LNbits.utils.notifyApiError(error)
+          })
+      },
+      exportJSON(tempId) {
+        const temp = _.findWhere(this.temps, {id: tempId})
+        const data = [...temp.items]
+        const filename = `items_${temp.id}.json`
+        const json = JSON.stringify(data, null, 2)
+        let status = Quasar.utils.exportFile(filename, json)
+        if (status !== true) {
+          this.$q.notify({
+            message: 'Browser denied file download...',
+            color: 'negative'
+          })
+        }
+      },
+      importJSON(tempId) {
+        try {
+          let input = document.getElementById('import')
+          input.click()
+          input.onchange = e => {
+            let file = e.target.files[0]
+            let reader = new FileReader()
+            reader.readAsText(file, 'UTF-8')
+            reader.onload = async readerEvent => {
+              try {
+                let content = readerEvent.target.result
+                let data = JSON.parse(content).filter(
+                  obj => obj.title && obj.price
+                )
+                if (!data.length) {
+                  throw new Error('Invalid JSON or missing data.')
+                }
+                this.openFileDataDialog(tempId, data)
+              } catch (error) {
+                this.$q.notify({
+                  message: `Error importing file. ${error.message}`,
+                  color: 'negative'
+                })
+                return
+              }
+            }
+          }
+        } catch (error) {
+          this.$q.notify({
+            message: 'Error importing file',
+            color: 'negative'
+          })
+        }
+      },
+      openFileDataDialog(tempId, data) {
+        const temp = _.findWhere(this.temps, {id: tempId})
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: temp.wallet
+        })
+        data.forEach(item => {
+          item.formattedPrice = LNbits.utils.formatCurrency(
+            Number(item.price).toFixed(2),
+            temp.currency
+          )
+        })
+        this.fileDataDialog.data = data
+        this.fileDataDialog.count = data.length
+        this.fileDataDialog.show = true
+        this.fileDataDialog.import = () => {
+          let updatedData = {
+            items: [...temp.items, ...data]
+          }
+          this.updateTempItems(temp.id, wallet, updatedData)
+          this.fileDataDialog.data = {}
+          this.fileDataDialog.show = false
+        }
+      },
+      openUrlDialog(id) {
+        this.urlDialog.data = _.findWhere(this.temps, {id})
+        this.urlDialog.show = true
+      }
+    },
+    created: function () {
+      if (this.g.user.wallets.length) {
+        this.getTemps()
+      }
+    }
+  })
+</script>
+{% endblock %}
