@@ -6,7 +6,7 @@
 
 Let the hacking begin! After you have forked this extension you can copy functions from other extensions that you might need. 
 
-The extension README is usually used as a guide of how to use the extensiobn.
+The extension README is usually used as a guide of how to use the extension.
 
 ### Usage
 
