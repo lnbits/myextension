@@ -4,7 +4,9 @@
 
 ## A template extension you can fork and use as a base for a template
 
-Let the hacking begin! After you have forked this extension you can copy functions from other extensions that you might need. Usually the README is used as a guide of how to us ethe extensiobn.
+Let the hacking begin! After you have forked this extension you can copy functions from other extensions that you might need. 
+
+The extension README is usually used as a guide of how to use the extensiobn.
 
 ### Usage
 
