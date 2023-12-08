@@ -18,7 +18,9 @@ async def create_temp(wallet_id: str, data: CreateTempData) -> Temp:
             temp_id,
             wallet_id,
             data.name,
-            data.total
+            data.total,
+            data.lnurlpayamount,
+            data.lnurlwithdrawamount
         ),
     )
     temp = await get_temp(temp_id)

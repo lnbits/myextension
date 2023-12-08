@@ -9,7 +9,10 @@ async def m001_initial(db):
         CREATE TABLE temp.temp (
             id TEXT PRIMARY KEY,
             wallet TEXT NOT NULL,
-            name TEXT NOT NULL
+            name TEXT NOT NULL,
+            total INTEGER DEFAULT 0,
+            lnurlpayamount INTEGER DEFAULT 0,
+            lnurlwithdrawamount INTEGER DEFAULT 0,
         );
     """
     )
@@ -23,6 +26,6 @@ async def m002_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE temp.temp ADD total withdrawlimit INTEGER DEFAULT 0,;
+        ALTER TABLE temp.temp ADD lnurlwithdrawamount withdrawlimit INTEGER DEFAULT 0,;
     """
     )

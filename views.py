@@ -49,11 +49,11 @@ async def temp(request: Request, temp_id):
     )
 
 
-# Customise a manifest, or remove manifest completely
+# Manifest, customise or remove manifest completely
 
 @temp_ext.get("/manifest/{temp_id}.webmanifest")
 async def manifest(temp_id: str):
-    remp= await get_temp(temp_id)
+    temp= await get_temp(temp_id)
     if not temp:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Temp does not exist."

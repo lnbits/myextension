@@ -34,10 +34,7 @@ from .models import CreateTempData, PayLnurlWData, LNURLCharge, CreateUpdateItem
 ##### ADD YOUR API ENDPOINTS HERE #####
 #######################################
 
-
-# TYPICAL ENDPOINTS
-
-# get all the records belonging to the user
+## Get all the records belonging to the user
 
 @temp_ext.get("/api/v1/temps", status_code=HTTPStatus.OK)
 async def api_temps(
@@ -50,7 +47,7 @@ async def api_temps(
     return [temp.dict() for temp in await get_temps(wallet_ids)]
 
 
-# get a specific record belonging to a user
+## Get a specific record belonging to a user
 
 @temp_ext.put("/api/v1/temps/{temp_id}")
 async def api_temp_update(
@@ -71,7 +68,7 @@ async def api_temp_update(
     return temp.dict()
 
 
-# Create a new record
+## Create a new record
 
 @temp_ext.post("/api/v1/temps", status_code=HTTPStatus.CREATED)
 async def api_temp_create(
@@ -81,7 +78,7 @@ async def api_temp_create(
     return temp.dict()
 
 
-# Delete a record
+## Delete a record
 
 @temp_ext.delete("/api/v1/temps/{temp_id}")
 async def api_temp_delete(
@@ -103,7 +100,7 @@ async def api_temp_delete(
 
 # ANY OTHER ENDPOINTS YOU NEED
 
-# This endpoint creates a payment
+## This endpoint creates a payment
 
 @tpos_ext.post("/api/v1/temps/payment/{temp_id}", status_code=HTTPStatus.CREATED)
 async def api_tpos_create_invoice(
