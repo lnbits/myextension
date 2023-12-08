@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 from lnbits.helpers import urlsafe_short_hash
 
 from . import db
-from .models import CreateTempData, Temp, TempClean, LNURLCharge
+from .models import CreateTempData, Temp
 from loguru import logger
 
 

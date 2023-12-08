@@ -27,7 +27,7 @@ from .crud import (
     get_temp,
     get_temps
 )
-from .models import CreateTempData, PayLnurlWData, LNURLCharge, CreateUpdateItemData
+from .models import CreateTempData
 
 
 #######################################
@@ -102,7 +102,7 @@ async def api_temp_delete(
 
 ## This endpoint creates a payment
 
-@tpos_ext.post("/api/v1/temps/payment/{temp_id}", status_code=HTTPStatus.CREATED)
+@temp_ext.post("/api/v1/temps/payment/{temp_id}", status_code=HTTPStatus.CREATED)
 async def api_tpos_create_invoice(
     temp_id: str, amount: int = Query(..., ge=1), memo: str = ""
 ) -> dict:

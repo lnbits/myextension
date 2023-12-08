@@ -11,12 +11,10 @@ async def m001_initial(db):
             wallet TEXT NOT NULL,
             name TEXT NOT NULL,
             total INTEGER DEFAULT 0,
-            lnurlpayamount INTEGER DEFAULT 0,
-            lnurlwithdrawamount INTEGER DEFAULT 0,
+            lnurlpayamount INTEGER DEFAULT 0
         );
     """
     )
-
 
 # Here we are adding an extra field to the database
 
@@ -26,6 +24,6 @@ async def m002_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE temp.temp ADD lnurlwithdrawamount withdrawlimit INTEGER DEFAULT 0,;
+        ALTER TABLE temp.temp ADD lnurlwithdrawamount INTEGER DEFAULT 0;
     """
     )

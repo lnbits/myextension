@@ -23,5 +23,5 @@ class Temp(BaseModel):
     def from_row(cls, row: Row) -> "Temp":
         return cls(**dict(row))
 
-class CreateUpdateItemData(BaseModel):
+class CreateUpdateTempData(BaseModel):
     items: List[Temp]

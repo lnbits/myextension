@@ -1,7 +1,7 @@
 from http import HTTPStatus
 
 from fastapi import Depends, Request
-from fastapi.templating import Jinja2Temps
+from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse
 
@@ -12,7 +12,7 @@ from lnbits.settings import settings
 from . import temp_ext, template_renderer
 from .crud import get_temp
 
-temps = Jinja2Temps(directory="temps")
+temps = Jinja2Templates(directory="temps")
 
 
 #######################################

@@ -41,7 +41,7 @@ async def on_invoice_paid(payment: Payment) -> None:
     # update something
     
     data_to_update = {
-        "total" temp.total + payment.amount
+        "total": temp.total + payment.amount
     }
 
     await update_temp(temp_id=temp_id, **data_to_update.dict())
