@@ -9,7 +9,7 @@ from lnbits.tasks import catch_everything_and_restart
 from typing import Callable
 from fastapi.responses import JSONResponse
 
-db = Database("ext_temp")
+db = Database("ext_tempextension")
 
 temp_ext: APIRouter = APIRouter(
     prefix="/temp", tags=["temp"]
