@@ -6,7 +6,7 @@ async def m001_initial(db):
     """
     await db.execute(
         """
-        CREATE TABLE tempextension.tempextension (
+        CREATE TABLE tempextension.temp (
             id TEXT PRIMARY KEY,
             wallet TEXT NOT NULL,
             name TEXT NOT NULL,
@@ -24,6 +24,6 @@ async def m002_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE tempextension.tempextension ADD lnurlwithdrawamount INTEGER DEFAULT 0;
+        ALTER TABLE tempextension.temp ADD lnurlwithdrawamount INTEGER DEFAULT 0;
     """
     )

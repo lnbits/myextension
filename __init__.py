@@ -1,13 +1,10 @@
 import asyncio
 
-from fastapi import APIRouter, Request, Response
-from fastapi.routing import APIRoute
+from fastapi import APIRouter
 
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from lnbits.tasks import catch_everything_and_restart
-from typing import Callable
-from fastapi.responses import JSONResponse
 
 db = Database("ext_tempextension")
 
@@ -22,7 +19,7 @@ temp_static_files = [
     }
 ]
 
-def template_renderer():
+def temp_renderer():
     return template_renderer(["temp/templates"])
 
 from .lnurl import *

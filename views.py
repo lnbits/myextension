@@ -9,7 +9,7 @@ from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.settings import settings
 
-from . import temp_ext, template_renderer
+from . import temp_ext, temp_renderer
 from .crud import get_temp
 
 temps = Jinja2Templates(directory="temps")
@@ -24,7 +24,7 @@ temps = Jinja2Templates(directory="temps")
 
 @temp_ext.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
-    return template_renderer().TempResponse(
+    return temp_renderer().TemplateResponse(
         "temp/index.html", {"request": request, "user": user.dict()}
     )
 
@@ -38,7 +38,7 @@ async def temp(request: Request, temp_id):
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Temp does not exist."
         )
-    return template_renderer().TempResponse(
+    return temp_renderer().TemplateResponse(
         "temp/temp.html",
         {
             "request": request,
