@@ -2,8 +2,6 @@
 
 # Temp - An [LNbits](https://github.com/lnbits/lnbits) Extension
 
-For more information about LNBits extensions, refer to [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions).
-
 ## A Starter Template for Your Own Extension
 
 Ready to start hacking? Once you've forked this extension, you can incorporate functions from other extensions as needed. 
