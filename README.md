@@ -9,11 +9,13 @@ Let the hacking begin! After you have forked this extension you can copy functio
 The extension README is usually used as a guide of how to use the extension.
 
 ### Usage
+> We are assumng you want to use this extension as a base for a new extension
 
-1. Enable extension
-2. Create a Temp\
-   ![create](https://imgur.com/8jNj8Zq.jpg)
-3. Open the link for the Temp\
-   ![open](https://imgur.com/LZuoWzb.jpg)
-4. Press button to generate an invoice and pay\
-   ![pay](https://imgur.com/tOwxn77.jpg)
+1. Install then enable the extension either through the official LNbits manifest of by adding https://raw.githubusercontent.com/lnbits/temp/main/manifest.json to `"Server"/"Server"/"Extension Sources"`. <img src="https://i.imgur.com/MUGwAU3.png">
+2. Shutdown your LNbits install.
+3. Download the extension files from https://github.com/lnbits/temp to a folder outside of `/lnbits`, and initialise the folder with `git`. Or create a repo, copy the temp extension files into it, then `git clone` the extension to a location outside of `/lnbits`. 
+4. Delete the installed extension from `lnbits/lnbits/extenions`.
+5. Create a symbolic link `ln -s /home/ben/Projects/temp /home/ben/Projects/lnbits/lnbits/extensions`.
+6. Start your LNbits install (Now you can edit your extension).
+7. Once you are ready to share your manifest so others can install edit `/lnbits/temp/manifest.json` to the git credentials of your extension.
+8. IMPORTANT: If you intend the extension to be added to the offial LNbits manifest, please follow the guidlines here https://github.com/lnbits/lnbits-extensions#important
