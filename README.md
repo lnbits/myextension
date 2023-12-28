@@ -1,3 +1,5 @@
+`The README.md typically serves as a guide for using the extension.`
+
 # Temp - An [LNbits](https://github.com/lnbits/lnbits) Extension
 
 For more information about LNBits extensions, refer to [this tutorial](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions).
@@ -5,8 +7,6 @@ For more information about LNBits extensions, refer to [this tutorial](https://g
 ## A Starter Template for Your Own Extension
 
 Ready to start hacking? Once you've forked this extension, you can incorporate functions from other extensions as needed. 
-
-This README typically serves as a guide for using the extension.
 
 ### How to Use This Template
 > This guide assumes you're using this extension as a base for a new one.
