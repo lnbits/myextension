@@ -1,9 +1,9 @@
 {
   "repos": [
     {
-      "id": "tempextension",
+      "id": "temp",
       "organisation": "lnbits",
-      "repository": "tempextension"
+      "repository": "temp"
     }
   ]
 }
