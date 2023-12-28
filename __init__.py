@@ -12,18 +12,18 @@ from fastapi.responses import JSONResponse
 db = Database("ext_tempextension")
 
 temp_ext: APIRouter = APIRouter(
-    prefix="/tempextension", tags=["Temp"]
+    prefix="/temp", tags=["Temp"]
 )
 
 temp_static_files = [
     {
-        "path": "/tempextension/static",
-        "name": "tempextension_static",
+        "path": "/temp/static",
+        "name": "temp_static",
     }
 ]
 
 def template_renderer():
-    return template_renderer(["tempextension/templates"])
+    return template_renderer(["temp/templates"])
 
 from .lnurl import *
 from .tasks import wait_for_paid_invoices
