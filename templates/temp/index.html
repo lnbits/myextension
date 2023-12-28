@@ -7,7 +7,7 @@
         <q-btn unelevated color="primary" @click="formDialog.show = true"
           >New Temp</q-btn
         >
-      </q-card-section>
+    </q-card-section>
     </q-card>
 
     <q-card>
@@ -29,14 +29,47 @@
           :pagination.sync="tempsTable.pagination"
         >
           <temp v-slot:header="props">
-            <q-tr :props="props">
-              <q-th auto-width></q-th>
-              <q-th auto-width></q-th>
+            <q-tr :props="props">              
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
                 ${ col.label }
               </q-th>
+              <q-th auto-width>LNURL-pay</q-th>
+              <q-th auto-width>LNURL-withdraw</q-th>
             </q-tr>
           </temp>
+
+          <template v-slot:body="props">
+            <q-tr :props="props">
+              <q-td
+              v-for="col in props.cols"
+              :key="col.name"
+              :props="props"
+            >
+            ${ col.value }
+            <q-btn
+            unelevated
+            dense
+            size="sm"
+            v-if="col.name == 'lnurlpayamount'"
+            icon="qr_code"
+            :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+            class="q-mr-sm"
+            @click="openUrlDialog(props.row.id)"
+            ></q-btn>
+          <q-btn
+          unelevated
+          dense
+          size="sm"
+          v-if="col.name == 'lnurlwithdrawamount'"
+          icon="qr_code"
+          :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
+          class="q-mr-sm"
+          @click="openUrlDialog(props.row.id)"
+          ></q-btn>
+        </q-td>
+            </q-tr>
+          </template>
+
         </q-table>
       </q-card-section>
     </q-card>
@@ -46,6 +79,7 @@
     <q-card>
       <q-card-section>
         <h6 class="text-subtitle1 q-my-none">{{SITE_TITLE}} Temp extension</h6>
+        <p>Simple extension you can use as a base for your own extension. <br/> Includes very simple LNURL-pay and LNURL-withdraw example.</p>
       </q-card-section>
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
@@ -79,14 +113,16 @@
         <q-input
         filled
         dense
-        v-model.trim="itemDialog.data.description"
-        label="Description"
+        type="number"
+        v-model.trim="formDialog.data.lnurlwithdrawamount"
+        label="LNURL-withdraw amount"
       ></q-input>
       <q-input
       filled
       dense
-      v-model.trim="itemDialog.data.description"
-      label="Description"
+      type="number"
+      v-model.trim="formDialog.data.lnurlpayamount"
+      label="LNURL-pay amount"
     ></q-input>
         <div class="row q-mt-lg">
           <q-btn
@@ -100,7 +136,7 @@
             v-else
             unelevated
             color="primary"
-            :disable="formDialog.data.currency == null || formDialog.data.name == null"
+            :disable="formDialog.data.name == null || formDialog.data.wallet == null || formDialog.data.lnurlwithdrawamount == null || formDialog.data.lnurlpayamount == null"
             type="submit"
             >Create Temp</q-btn
           >
@@ -137,24 +173,13 @@
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
+  // The object returned here will be merged with the data object of the Vue instance
   const mapTemp = obj => {
     obj.date = Quasar.utils.date.formatDate(
       new Date(obj.time * 1000),
       'YYYY-MM-DD HH:mm'
     )
     obj.temp = ['/temp/', obj.id].join('')
-    obj.shareUrl = [
-      window.location.protocol,
-      '//',
-      window.location.host,
-      obj.temp
-    ].join('')
-    obj.items = JSON.parse(obj.items)
-    obj.itemsMap = new Map()
-    obj.items.forEach((item, idx) => {
-      let id = `${obj.id}:${idx + 1}`
-      obj.itemsMap.set(id, {...item, id})
-    })
     return obj
   }
 
@@ -164,16 +189,28 @@
     delimiters: ['${', '}'],
     data: function () {
       return {
-
+        temps: [],
         tempsTable: {
           columns: [
             {name: 'id', align: 'left', label: 'ID', field: 'id'},
             {name: 'name', align: 'left', label: 'Name', field: 'name'},
             {
-              name: 'currency',
+              name: 'wallet',
               align: 'left',
-              label: 'Currency',
-              field: 'currency'
+              label: 'Wallet',
+              field: 'wallet'
+            },
+            {
+              name: 'lnurlwithdrawamount',
+              align: 'left',
+              label: 'LNURL Withdraw amount',
+              field: 'lnurlwithdrawamount'
+            },
+            {
+              name: 'lnurlpayamount',
+              align: 'left',
+              label: 'LNURL Pay amount',
+              field: 'lnurlpayamount'
             }
           ],
           pagination: {
@@ -224,31 +261,15 @@
       },
       sendTPosData() {
         const data = {
-          ...this.formDialog.data,
-          tip_options:
-            this.formDialog.advanced.tips && this.formDialog.data.tip_options
-              ? JSON.stringify(
-                  this.formDialog.data.tip_options.map(str => parseInt(str))
-                )
-              : JSON.stringify([]),
-          tip_wallet:
-            (this.formDialog.advanced.tips &&
-              this.formDialog.data.tip_wallet) ||
-            '',
-          items: JSON.stringify(this.formDialog.data.items)
-        }
-        // delete withdrawbtwn if value is empty string, defaults to 10 minutes
-        if (this.formDialog.data.withdrawbtwn == '') {
-          delete data.withdrawbtwn
-        }
-        if (!this.formDialog.advanced.otc) {
-          data.withdrawlimit = null
-          data.withdrawpin = null
-          data.withdrawpremium = null
+          name: this.formDialog.data.name,
+          lnurlwithdrawamount: this.formDialog.data.lnurlwithdrawamount,
+          lnurlpayamount: this.formDialog.data.lnurlpayamount
         }
         const wallet = _.findWhere(this.g.user.wallets, {
           id: this.formDialog.data.wallet
         })
+        console.log(data)
+        console.log(wallet)
         if (data.id) {
           this.updateTPos(wallet, data)
         } else {
@@ -334,24 +355,24 @@
         const currency = _.findWhere(this.temps, {id: temp}).currency
         return LNbits.utils.formatCurrency(Number(price).toFixed(2), currency)
       },
-      openItemDialog(id) {
+      openformDialog(id) {
         const [tempId, itemId] = id.split(':')
         const temp = _.findWhere(this.temps, {id: tempId})
         if (itemId) {
           const item = temp.itemsMap.get(id)
-          this.itemDialog.data = {
+          this.formDialog.data = {
             ...item,
             temp: tempId
           }
         } else {
-          this.itemDialog.data.temp = tempId
+          this.formDialog.data.temp = tempId
         }
-        this.itemDialog.data.currency = temp.currency
-        this.itemDialog.show = true
+        this.formDialog.data.currency = temp.currency
+        this.formDialog.show = true
       },
-      closeItemDialog() {
-        this.itemDialog.show = false
-        this.itemDialog.data = {
+      closeformDialog() {
+        this.formDialog.show = false
+        this.formDialog.data = {
           title: '',
           image: '',
           price: '',
@@ -375,17 +396,17 @@
           })
       },
       addItems() {
-        const temp = _.findWhere(this.temps, {id: this.itemDialog.data.temp})
+        const temp = _.findWhere(this.temps, {id: this.formDialog.data.temp})
         const wallet = _.findWhere(this.g.user.wallets, {
           id: temp.wallet
         })
-        if (this.itemDialog.data.id) {
-          temp.itemsMap.set(this.itemDialog.data.id, this.itemDialog.data)
+        if (this.formDialog.data.id) {
+          temp.itemsMap.set(this.formDialog.data.id, this.formDialog.data)
         }
         const data = {
-          items: this.itemDialog.data.id
+          items: this.formDialog.data.id
             ? [...temp.itemsMap.values()]
-            : [...temp.items, this.itemDialog.data]
+            : [...temp.items, this.formDialog.data]
         }
         this.updateTempItems(temp.id, wallet, data)
       },
@@ -417,7 +438,7 @@
               return obj.id == tempId
             })
             this.temps.push(mapTemp(response.data))
-            this.closeItemDialog()
+            this.closeformDialog()
           })
           .catch(error => {
             LNbits.utils.notifyApiError(error)

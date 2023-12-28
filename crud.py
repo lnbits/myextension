@@ -11,14 +11,13 @@ async def create_temp(wallet_id: str, data: CreateTempData) -> Temp:
     temp_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO tempextension.temp (id, wallet, name, total)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO tempextension.temp (id, wallet, name, lnurlpayamount, lnurlwithdrawamount)
+        VALUES (?, ?, ?, ?, ?)
         """,
         (
             temp_id,
             wallet_id,
             data.name,
-            data.total,
             data.lnurlpayamount,
             data.lnurlwithdrawamount
         ),
