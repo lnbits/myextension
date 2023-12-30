@@ -38,13 +38,13 @@ from .models import CreateTempData
 
 @temp_ext.get("/api/v1/temps", status_code=HTTPStatus.OK)
 async def api_temps(
-    all_wallets: bool = Query(False), wallet: WalletTypeInfo = Depends(get_key_type)
+    req: Request, all_wallets: bool = Query(False), wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     wallet_ids = [wallet.wallet.id]
     if all_wallets:
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [temp.dict() for temp in await get_temps(wallet_ids)]
+    return [temp.dict() for temp in await get_temps(wallet_ids, req)]
 
 
 ## Get a specific record belonging to a user

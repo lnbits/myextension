@@ -15,7 +15,9 @@ from lnbits.core.services import create_invoice
 #################################################
 
 @temp_ext.get(
-    "/api/v1/lnurl/pay/{temp_id}", status_code=HTTPStatus.OK
+    "/api/v1/lnurl/pay/{temp_id}", 
+    status_code=HTTPStatus.OK,
+    name="temp.api_lnurl_pay",
 )
 async def api_lnurl_pay(
     request: Request,
@@ -67,7 +69,9 @@ async def api_lnurl_pay_cb(
 
 
 @temp_ext.get(
-    "/api/v1/lnurl/withdraw/{temp_id}", status_code=HTTPStatus.OK
+    "/api/v1/lnurl/withdraw/{temp_id}",
+    status_code=HTTPStatus.OK,
+    name="temp.api_lnurl_withdraw",
 )
 async def api_lnurl_pay(
     request: Request,
@@ -77,7 +81,7 @@ async def api_lnurl_pay(
     if not temp:
         return {"status": "ERROR", "reason": "No temp found"}
     return {
-            "callback": str(request.url_for("temp.api_lnurl_pay_callback", temp_id=temp_id)),
+            "callback": str(request.url_for("temp.api_lnurl_withdraw_callback", temp_id=temp_id)),
             "maxSendable": temp.lnurlwithdrawamount,
             "minSendable": temp.lnurlwithdrawamount,
             "k1": "",
@@ -89,7 +93,7 @@ async def api_lnurl_pay(
 @temp_ext.get(
     "/api/v1/lnurl/pay/cb/{temp_id}", 
     status_code=HTTPStatus.OK,
-    name="temp.api_lnurl_pay_callback",
+    name="temp.api_lnurl_withdraw_callback",
 )
 async def api_lnurl_pay_cb(
     request: Request,

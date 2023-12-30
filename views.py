@@ -42,14 +42,15 @@ async def temp(request: Request, temp_id):
         "temp/temp.html",
         {
             "request": request,
-            "temp": temp,
-            "withdrawamtemps": temp.withdrawamtemps,
+            "temp_id": temp_id,
+            "lnurlpay": temp.lnurlpayamount,
+            "lnurlwithdraw": temp.lnurlwithdrawamount,
             "web_manifest": f"/temp/manifest/{temp_id}.webmanifest",
         },
     )
 
 
-# Manifest, customise or remove manifest completely
+# Manifest for public page, customise or remove manifest completely
 
 @temp_ext.get("/manifest/{temp_id}.webmanifest")
 async def manifest(temp_id: str):

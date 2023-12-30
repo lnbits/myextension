@@ -5,7 +5,8 @@ from lnbits.helpers import urlsafe_short_hash
 from . import db
 from .models import CreateTempData, Temp
 from loguru import logger
-
+from fastapi import Request
+from lnurl import encode as lnurl_encode
 
 async def create_temp(wallet_id: str, data: CreateTempData) -> Temp:
     temp_id = urlsafe_short_hash()
@@ -31,7 +32,7 @@ async def get_temp(temp_id: str) -> Optional[Temp]:
     row = await db.fetchone("SELECT * FROM tempextension.temp WHERE id = ?", (temp_id,))
     return Temp(**row) if row else None
 
-async def get_temps(wallet_ids: Union[str, List[str]]) -> List[Temp]:
+async def get_temps(wallet_ids: Union[str, List[str]], req: Request) -> List[Temp]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
 
@@ -39,7 +40,12 @@ async def get_temps(wallet_ids: Union[str, List[str]]) -> List[Temp]:
     rows = await db.fetchall(
         f"SELECT * FROM tempextension.temp WHERE wallet IN ({q})", (*wallet_ids,)
     )
-    return [Temp(**row) for row in rows]
+    tempRows = [Temp(**row) for row in rows]
+    logger.debug(req.url_for("temp.api_lnurl_pay", temp_id=row.id))
+    for row in tempRows:
+        row.lnurlpay = req.url_for("temp.api_lnurl_pay", temp_id=row.id)
+        row.lnurlwithdraw = req.url_for("temp.api_lnurl_withdraw", temp_id=row.id)
+    return tempRows
 
 async def update_temp(temp_id: str, **kwargs) -> Temp:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])

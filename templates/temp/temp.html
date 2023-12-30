@@ -37,7 +37,7 @@
       </q-card-section>
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
-        <q-list> {% include "lnurlp/_lnurl.html" %} </q-list>
+        <q-list>  </q-list>
       </q-card-section>
     </q-card>
   </div>
@@ -48,7 +48,18 @@
 
   new Vue({
     el: '#vue',
-    mixins: [windowMixin]
+    mixins: [windowMixin],
+    data: function () {
+      return {
+        lnurlpay: "",
+        lnurlwithdraw: "",
+      }
+    },
+    created: function () {
+      if (this.g.user.wallets.length) {
+        this.getTemps()
+      }
+    }
   })
 </script>
 {% endblock %}

@@ -27,3 +27,27 @@ async def m002_addtip_wallet(db):
         ALTER TABLE tempextension.temp ADD lnurlwithdrawamount INTEGER DEFAULT 0;
     """
     )
+
+# Here we add another field to the database, always add never edit!
+
+async def m004_addtip_wallet(db):
+    """
+    Add total to templates table
+    """
+    await db.execute(
+        """
+        ALTER TABLE tempextension.temp ADD lnurlwithdraw TEXT;
+    """
+    )
+
+# Here we add another field to the database
+
+async def m005_addtip_wallet(db):
+    """
+    Add total to templates table
+    """
+    await db.execute(
+        """
+        ALTER TABLE tempextension.temp ADD lnurlpay TEXT;
+    """
+    )
