@@ -6,27 +6,26 @@ from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from lnbits.tasks import catch_everything_and_restart
 
-db = Database("ext_tempextension")
+db = Database("ext_myextension")
 
-temp_ext: APIRouter = APIRouter(
-    prefix="/temp", tags=["Temp"]
+myextension_ext: APIRouter = APIRouter(
+    prefix="/myextension", tags=["MyExtension"]
 )
 
 temp_static_files = [
     {
-        "path": "/temp/static",
+        "path": "/myextension/static",
         "name": "temp_static",
     }
 ]
 
-def temp_renderer():
-    return template_renderer(["temp/templates"])
+def myextension_renderer():
+    return template_renderer(["myextension/templates"])
 
 from .lnurl import *
 from .tasks import wait_for_paid_invoices
 from .views import *
 from .views_api import *
-
 
 def temp_start():
     loop = asyncio.get_event_loop()

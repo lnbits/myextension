@@ -3,8 +3,8 @@
 
 from http import HTTPStatus
 from fastapi import Depends, Query, Request
-from . import temp_ext
-from .crud import get_temp
+from . import myextension_ext
+from .crud import get_myextension
 from lnbits.core.services import create_invoice
 
 
@@ -14,48 +14,48 @@ from lnbits.core.services import create_invoice
 #################################################
 #################################################
 
-@temp_ext.get(
-    "/api/v1/lnurl/pay/{temp_id}", 
+@myextension_ext.get(
+    "/api/v1/lnurl/pay/{myextension_id}", 
     status_code=HTTPStatus.OK,
-    name="temp.api_lnurl_pay",
+    name="myextension.api_lnurl_pay",
 )
 async def api_lnurl_pay(
     request: Request,
-    temp_id: str,
+    myextension_id: str,
 ):
-    temp = await get_temp(temp_id)
-    if not temp:
-        return {"status": "ERROR", "reason": "No temp found"}
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
+        return {"status": "ERROR", "reason": "No myextension found"}
     return {
-            "callback": str(request.url_for("temp.api_lnurl_pay_callback", temp_id=temp_id)),
-            "maxSendable": temp.lnurlpayamount,
-            "minSendable": temp.lnurlpayamount,
-            "metadata":"[[\"text/plain\", \"" + temp.name + "\"]]",
+            "callback": str(request.url_for("myextension.api_lnurl_pay_callback", myextension_id=myextension_id)),
+            "maxSendable": myextension.lnurlpayamount,
+            "minSendable": myextension.lnurlpayamount,
+            "metadata":"[[\"text/plain\", \"" + myextension.name + "\"]]",
             "tag": "payRequest"
         }
 
-@temp_ext.get(
-    "/api/v1/lnurl/pay/cb/{temp_id}", 
+@myextension_ext.get(
+    "/api/v1/lnurl/pay/cb/{myextension_id}", 
     status_code=HTTPStatus.OK,
-    name="temp.api_lnurl_pay_callback",
+    name="myextension.api_lnurl_pay_callback",
 )
 async def api_lnurl_pay_cb(
     request: Request,
-    temp_id: str,
+    myextension_id: str,
     amount: int = Query(...),
 ):
-    temp = await get_temp(temp_id)
-    if not temp:
-        return {"status": "ERROR", "reason": "No temp found"}
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
+        return {"status": "ERROR", "reason": "No myextension found"}
     
     payment_request = await create_invoice(
-        wallet_id=temp.wallet,
+        wallet_id=myextension.wallet,
         amount=int(amount / 1000),
-        memo=temp.name,
-        unhashed_description="[[\"text/plain\", \"" + temp.name + "\"]]".encode(),
+        memo=myextension.name,
+        unhashed_description="[[\"text/plain\", \"" + myextension.name + "\"]]".encode(),
         extra= {
-            "tag": "temp",
-            "link": temp_id,
+            "tag": "myextension",
+            "link": myextension_id,
             "extra": request.query_params.get("amount"),
         },
     )
@@ -68,50 +68,50 @@ async def api_lnurl_pay_cb(
 #################################################
 
 
-@temp_ext.get(
-    "/api/v1/lnurl/withdraw/{temp_id}",
+@myextension_ext.get(
+    "/api/v1/lnurl/withdraw/{myextension_id}",
     status_code=HTTPStatus.OK,
-    name="temp.api_lnurl_withdraw",
+    name="myextension.api_lnurl_withdraw",
 )
 async def api_lnurl_pay(
     request: Request,
-    temp_id: str,
+    myextension_id: str,
 ):
-    temp = await get_temp(temp_id)
-    if not temp:
-        return {"status": "ERROR", "reason": "No temp found"}
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
+        return {"status": "ERROR", "reason": "No myextension found"}
     return {
-            "callback": str(request.url_for("temp.api_lnurl_withdraw_callback", temp_id=temp_id)),
-            "maxSendable": temp.lnurlwithdrawamount,
-            "minSendable": temp.lnurlwithdrawamount,
+            "callback": str(request.url_for("myextension.api_lnurl_withdraw_callback", myextension_id=myextension_id)),
+            "maxSendable": myextension.lnurlwithdrawamount,
+            "minSendable": myextension.lnurlwithdrawamount,
             "k1": "",
-            "defaultDescription": temp.name,
-            "metadata":"[[\"text/plain\", \"" + temp.name + "\"]]",
+            "defaultDescription": myextension.name,
+            "metadata":"[[\"text/plain\", \"" + myextension.name + "\"]]",
             "tag": "withdrawRequest"
         }
 
-@temp_ext.get(
-    "/api/v1/lnurl/pay/cb/{temp_id}", 
+@myextension_ext.get(
+    "/api/v1/lnurl/pay/cb/{myextension_id}", 
     status_code=HTTPStatus.OK,
-    name="temp.api_lnurl_withdraw_callback",
+    name="myextension.api_lnurl_withdraw_callback",
 )
 async def api_lnurl_pay_cb(
     request: Request,
-    temp_id: str,
+    myextension_id: str,
     amount: int = Query(...),
 ):
-    temp = await get_temp(temp_id)
-    if not temp:
-        return {"status": "ERROR", "reason": "No temp found"}
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
+        return {"status": "ERROR", "reason": "No myextension found"}
     
     payment_request = await create_invoice(
-        wallet_id=temp.wallet,
+        wallet_id=myextension.wallet,
         amount=int(amount / 1000),
-        memo=temp.name,
-        unhashed_description="[[\"text/plain\", \"" + temp.name + "\"]]".encode(),
+        memo=myextension.name,
+        unhashed_description="[[\"text/plain\", \"" + myextension.name + "\"]]".encode(),
         extra= {
-            "tag": "temp",
-            "link": temp_id,
+            "tag": "myextension",
+            "link": myextension_id,
             "extra": request.query_params.get("amount"),
         },
     )

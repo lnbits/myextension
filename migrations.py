@@ -6,7 +6,7 @@ async def m001_initial(db):
     """
     await db.execute(
         """
-        CREATE TABLE tempextension.temp (
+        CREATE TABLE myextension.maintable (
             id TEXT PRIMARY KEY,
             wallet TEXT NOT NULL,
             name TEXT NOT NULL,
@@ -24,7 +24,7 @@ async def m002_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE tempextension.temp ADD lnurlwithdrawamount INTEGER DEFAULT 0;
+        ALTER TABLE myextension.maintable ADD lnurlwithdrawamount INTEGER DEFAULT 0;
     """
     )
 
@@ -36,7 +36,7 @@ async def m004_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE tempextension.temp ADD lnurlwithdraw TEXT;
+        ALTER TABLE myextension.maintable ADD lnurlwithdraw TEXT;
     """
     )
 
@@ -48,6 +48,6 @@ async def m005_addtip_wallet(db):
     """
     await db.execute(
         """
-        ALTER TABLE tempextension.temp ADD lnurlpay TEXT;
+        ALTER TABLE myextension.maintable ADD lnurlpay TEXT;
     """
     )

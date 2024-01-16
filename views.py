@@ -9,8 +9,8 @@ from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.settings import settings
 
-from . import temp_ext, temp_renderer
-from .crud import get_temp
+from . import myextension_ext, myextension_renderer
+from .crud import get_myextension
 
 temps = Jinja2Templates(directory="temps")
 
@@ -22,47 +22,47 @@ temps = Jinja2Templates(directory="temps")
 
 # Backend admin page
 
-@temp_ext.get("/", response_class=HTMLResponse)
+@myextension_ext.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
-    return temp_renderer().TemplateResponse(
-        "temp/index.html", {"request": request, "user": user.dict()}
+    return myextension_renderer().TemplateResponse(
+        "myextension/index.html", {"request": request, "user": user.dict()}
     )
 
 
 # Frontend shareable page
 
-@temp_ext.get("/{temp_id}")
-async def temp(request: Request, temp_id):
-    temp = await get_temp(temp_id)
-    if not temp:
+@myextension_ext.get("/{myextension_id}")
+async def myextension(request: Request, myextension_id):
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Temp does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    return temp_renderer().TemplateResponse(
-        "temp/temp.html",
+    return myextension_renderer().TemplateResponse(
+        "myextension/myextension.html",
         {
             "request": request,
-            "temp_id": temp_id,
-            "lnurlpay": temp.lnurlpayamount,
-            "lnurlwithdraw": temp.lnurlwithdrawamount,
-            "web_manifest": f"/temp/manifest/{temp_id}.webmanifest",
+            "myextension_id": myextension_id,
+            "lnurlpay": myextension.lnurlpayamount,
+            "lnurlwithdraw": myextension.lnurlwithdrawamount,
+            "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
         },
     )
 
 
 # Manifest for public page, customise or remove manifest completely
 
-@temp_ext.get("/manifest/{temp_id}.webmanifest")
-async def manifest(temp_id: str):
-    temp= await get_temp(temp_id)
-    if not temp:
+@myextension_ext.get("/manifest/{myextension_id}.webmanifest")
+async def manifest(myextension_id: str):
+    myextension= await get_myextension(myextension_id)
+    if not myextension:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Temp does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
     return {
         "short_name": settings.lnbits_site_title,
-        "name": temp.name + " - " + settings.lnbits_site_title,
+        "name": myextension.name + " - " + settings.lnbits_site_title,
         "icons": [
             {
                 "src": settings.lnbits_custom_logo
@@ -72,18 +72,18 @@ async def manifest(temp_id: str):
                 "sizes": "900x900",
             }
         ],
-        "start_url": "/temp/" + temp_id,
+        "start_url": "/myextension/" + myextension_id,
         "background_color": "#1F2234",
         "description": "Minimal extension to build on",
         "display": "standalone",
-        "scope": "/temp/" + temp_id,
+        "scope": "/myextension/" + myextension_id,
         "theme_color": "#1F2234",
         "shortcuts": [
             {
-                "name": temp.name + " - " + settings.lnbits_site_title,
-                "short_name": temp.name,
-                "description": temp.name + " - " + settings.lnbits_site_title,
-                "url": "/temp/" + temp_id,
+                "name": myextension.name + " - " + settings.lnbits_site_title,
+                "short_name": myextension.name,
+                "description": myextension.name + " - " + settings.lnbits_site_title,
+                "url": "/myextension/" + myextension_id,
             }
         ],
     }

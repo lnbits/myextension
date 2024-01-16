@@ -1,7 +1,7 @@
 {
-  "name": "Temp",
+  "name": "MyExtension",
   "short_description": "Minimal extension to build on",
-  "tile": "/temp/static/image/temp.png",
+  "tile": "/myextension/static/image/myextension.png",
   "contributors": ["arcbtc"],
   "min_lnbits_version": "0.0.1"
 }

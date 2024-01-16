@@ -3,58 +3,58 @@ from typing import List, Optional, Union
 from lnbits.helpers import urlsafe_short_hash
 
 from . import db
-from .models import CreateTempData, Temp
+from .models import CreateMyExtensionData, MyExtension
 from loguru import logger
 from fastapi import Request
 from lnurl import encode as lnurl_encode
 
-async def create_temp(wallet_id: str, data: CreateTempData) -> Temp:
-    temp_id = urlsafe_short_hash()
+async def create_myextension(wallet_id: str, data: CreateMyExtensionData) -> MyExtension:
+    myextension_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO tempextension.temp (id, wallet, name, lnurlpayamount, lnurlwithdrawamount)
+        INSERT INTO myextension.maintable (id, wallet, name, lnurlpayamount, lnurlwithdrawamount)
         VALUES (?, ?, ?, ?, ?)
         """,
         (
-            temp_id,
+            myextension_id,
             wallet_id,
             data.name,
             data.lnurlpayamount,
             data.lnurlwithdrawamount
         ),
     )
-    temp = await get_temp(temp_id)
-    assert temp, "Newly created temp couldn't be retrieved"
-    return temp
+    myextension = await get_myextension(myextension_id)
+    assert myextension, "Newly created table couldn't be retrieved"
+    return myextension
 
 
-async def get_temp(temp_id: str) -> Optional[Temp]:
-    row = await db.fetchone("SELECT * FROM tempextension.temp WHERE id = ?", (temp_id,))
-    return Temp(**row) if row else None
+async def get_myextension(myextension_id: str) -> Optional[MyExtension]:
+    row = await db.fetchone("SELECT * FROM myextension.maintable WHERE id = ?", (myextension_id,))
+    return MyExtension(**row) if row else None
 
-async def get_temps(wallet_ids: Union[str, List[str]], req: Request) -> List[Temp]:
+async def get_myextensions(wallet_ids: Union[str, List[str]], req: Request) -> List[MyExtension]:
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
 
     q = ",".join(["?"] * len(wallet_ids))
     rows = await db.fetchall(
-        f"SELECT * FROM tempextension.temp WHERE wallet IN ({q})", (*wallet_ids,)
+        f"SELECT * FROM myextension.maintable WHERE wallet IN ({q})", (*wallet_ids,)
     )
-    tempRows = [Temp(**row) for row in rows]
-    logger.debug(req.url_for("temp.api_lnurl_pay", temp_id=row.id))
+    tempRows = [MyExtension(**row) for row in rows]
+    logger.debug(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id))
     for row in tempRows:
-        row.lnurlpay = req.url_for("temp.api_lnurl_pay", temp_id=row.id)
-        row.lnurlwithdraw = req.url_for("temp.api_lnurl_withdraw", temp_id=row.id)
+        row.lnurlpay = req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)
+        row.lnurlwithdraw = req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)
     return tempRows
 
-async def update_temp(temp_id: str, **kwargs) -> Temp:
+async def update_myextension(myextension_id: str, **kwargs) -> MyExtension:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])
     await db.execute(
-        f"UPDATE tempextension.temp SET {q} WHERE id = ?", (*kwargs.values(), temp_id)
+        f"UPDATE myextension.maintable SET {q} WHERE id = ?", (*kwargs.values(), myextension_id)
     )
-    temp = await get_temp(temp_id)
-    assert temp, "Newly updated temp couldn't be retrieved"
-    return temp
+    myextension = await get_myextension(myextension_id)
+    assert myextension, "Newly updated myextension couldn't be retrieved"
+    return myextension
 
-async def delete_temp(temp_id: str) -> None:
-    await db.execute("DELETE FROM tempextension.temp WHERE id = ?", (temp_id,))
+async def delete_myextension(myextension_id: str) -> None:
+    await db.execute("DELETE FROM myextension.maintable WHERE id = ?", (myextension_id,))

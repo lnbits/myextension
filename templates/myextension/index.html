@@ -5,7 +5,7 @@
     <q-card>
       <q-card-section>
         <q-btn unelevated color="primary" @click="formDialog.show = true"
-          >New Temp</q-btn
+          >New MyExtension</q-btn
         >
     </q-card-section>
     </q-card>
@@ -14,7 +14,7 @@
       <q-card-section>
         <div class="row items-center no-wrap q-mb-md">
           <div class="col">
-            <h5 class="text-subtitle1 q-my-none">Temp</h5>
+            <h5 class="text-subtitle1 q-my-none">MyExtension</h5>
           </div>
           <div class="col-auto">
             <q-btn flat color="grey" @click="exportCSV">Export to CSV</q-btn>
@@ -28,13 +28,13 @@
           :columns="tempsTable.columns"
           :pagination.sync="tempsTable.pagination"
         >
-          <temp v-slot:header="props">
+          <myextension v-slot:header="props">
             <q-tr :props="props">
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
                 ${ col.label }
               </q-th>
             </q-tr>
-          </temp>
+          </myextension>
 
           <template v-slot:body="props">
             <q-tr :props="props">
@@ -63,7 +63,7 @@
             icon="launch"
             :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
             type="a"
-            :href="props.row.temp"
+            :href="props.row.myextension"
             target="_blank"
             ><q-tooltip>Open public page</q-tooltip></q-btn
           ></q-td>
@@ -91,15 +91,15 @@
   <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <h6 class="text-subtitle1 q-my-none">{{SITE_TITLE}} Temp extension</h6>
+        <h6 class="text-subtitle1 q-my-none">{{SITE_TITLE}} MyExtension extension</h6>
         <p>Simple extension you can use as a base for your own extension. <br/> Includes very simple LNURL-pay and LNURL-withdraw example.</p>
       </q-card-section>
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
         <q-list>
-          {% include "temp/_api_docs.html" %}
+          {% include "myextension/_api_docs.html" %}
           <q-separator></q-separator>
-          {% include "temp/_temp.html" %}
+          {% include "myextension/_myextension.html" %}
         </q-list>
       </q-card-section>
     </q-card>
@@ -143,7 +143,7 @@
             unelevated
             color="primary"
             type="submit"
-            >Update Temp</q-btn
+            >Update MyExtension</q-btn
           >
           <q-btn
             v-else
@@ -151,7 +151,7 @@
             color="primary"
             :disable="formDialog.data.name == null || formDialog.data.wallet == null || formDialog.data.lnurlwithdrawamount == null || formDialog.data.lnurlpayamount == null"
             type="submit"
-            >Create Temp</q-btn
+            >Create MyExtension</q-btn
           >
           <q-btn v-close-popup flat color="grey" class="q-ml-auto"
             >Cancel</q-btn
@@ -176,7 +176,7 @@
         <q-btn
           outline
           color="grey"
-          @click="copyText(urlDialog.data.lnurlpay, 'Temp URL copied to clipboard!')"
+          @click="copyText(urlDialog.data.lnurlpay, 'MyExtension URL copied to clipboard!')"
           >Copy URL</q-btn
         >
         <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
@@ -192,7 +192,7 @@
       new Date(obj.time * 1000),
       'YYYY-MM-DD HH:mm'
     )
-    obj.temp = ['/temp/', obj.id].join('')
+    obj.myextension = ['/myextension/', obj.id].join('')
     return obj
   }
 
@@ -251,7 +251,7 @@
         LNbits.api
           .request(
             'GET',
-            '/temp/api/v1/temps?all_wallets=true',
+            '/myextension/api/v1/temps?all_wallets=true',
             this.g.user.wallets[0].inkey
           )
           .then(function (response) {
@@ -278,10 +278,10 @@
         }
       },
       updateTPosForm(tempId) {
-        const temp = _.findWhere(this.temps, {id: tempId})
+        const myextension = _.findWhere(this.temps, {id: tempId})
         this.formDialog.data = {
-          ...temp,
-          tip_options: JSON.parse(temp.tip_options)
+          ...myextension,
+          tip_options: JSON.parse(myextension.tip_options)
         }
         if (this.formDialog.data.tip_wallet != '') {
           this.formDialog.advanced.tips = true
@@ -293,7 +293,7 @@
       },
       createTemp(wallet, data) {
         LNbits.api
-          .request('POST', '/temp/api/v1/temps', wallet.inkey, data)
+          .request('POST', '/myextension/api/v1/temps', wallet.inkey, data)
           .then(response => {
             this.temps.push(mapTemp(response.data))
             this.closeFormDialog()
@@ -306,7 +306,7 @@
         LNbits.api
           .request(
             'PUT',
-            `/temp/api/v1/temps/${data.id}`,
+            `/myextension/api/v1/temps/${data.id}`,
             wallet.adminkey,
             data
           )
@@ -323,16 +323,16 @@
       },
       deleteTemp: function (tempId) {
         var self = this
-        var temp = _.findWhere(this.temps, {id: tempId})
+        var myextension = _.findWhere(this.temps, {id: tempId})
 
         LNbits.utils
-          .confirmDialog('Are you sure you want to delete this Temp?')
+          .confirmDialog('Are you sure you want to delete this MyExtension?')
           .onOk(function () {
             LNbits.api
               .request(
                 'DELETE',
-                '/temp/api/v1/temps/' + tempId,
-                _.findWhere(self.g.user.wallets, {id: temp.wallet}).adminkey
+                '/myextension/api/v1/temps/' + tempId,
+                _.findWhere(self.g.user.wallets, {id: myextension.wallet}).adminkey
               )
               .then(function (response) {
                 self.temps = _.reject(self.temps, function (obj) {
@@ -348,27 +348,27 @@
         LNbits.utils.exportCSV(this.tempsTable.columns, this.temps)
       },
       itemsArray(tempId) {
-        const temp = _.findWhere(this.temps, {id: tempId})
-        return [...temp.itemsMap.values()]
+        const myextension = _.findWhere(this.temps, {id: tempId})
+        return [...myextension.itemsMap.values()]
       },
       itemFormatPrice(price, id) {
-        const temp = id.split(':')[0]
-        const currency = _.findWhere(this.temps, {id: temp}).currency
+        const myextension = id.split(':')[0]
+        const currency = _.findWhere(this.temps, {id: myextension}).currency
         return LNbits.utils.formatCurrency(Number(price).toFixed(2), currency)
       },
       openformDialog(id) {
         const [tempId, itemId] = id.split(':')
-        const temp = _.findWhere(this.temps, {id: tempId})
+        const myextension = _.findWhere(this.temps, {id: tempId})
         if (itemId) {
-          const item = temp.itemsMap.get(id)
+          const item = myextension.itemsMap.get(id)
           this.formDialog.data = {
             ...item,
-            temp: tempId
+            myextension: tempId
           }
         } else {
-          this.formDialog.data.temp = tempId
+          this.formDialog.data.myextension = tempId
         }
-        this.formDialog.data.currency = temp.currency
+        this.formDialog.data.currency = myextension.currency
         this.formDialog.show = true
       },
       closeformDialog() {

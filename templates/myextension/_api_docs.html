@@ -4,11 +4,11 @@
   label="API info"
   :content-inset-level="0.5"
 >
-  <q-btn flat label="Swagger API" type="a" href="../docs#/temp"></q-btn>
-  <q-expansion-item group="api" dense expand-separator label="List Temp">
+  <q-btn flat label="Swagger API" type="a" href="../docs#/myextension"></q-btn>
+  <q-expansion-item group="api" dense expand-separator label="List MyExtension">
     <q-card>
       <q-card-section>
-        <code><span class="text-blue">GET</span> /temp/api/v1/temps</code>
+        <code><span class="text-blue">GET</span> /myextension/api/v1/temps</code>
         <h5 class="text-caption q-mt-sm q-mb-none">Headers</h5>
         <code>{"X-Api-Key": &lt;invoice_key&gt;}</code><br />
         <h5 class="text-caption q-mt-sm q-mb-none">Body (application/json)</h5>
@@ -18,16 +18,16 @@
         <code>[&lt;temp_object&gt;, ...]</code>
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
-          >curl -X GET {{ request.base_url }}temp/api/v1/temps -H "X-Api-Key:
+          >curl -X GET {{ request.base_url }}myextension/api/v1/temps -H "X-Api-Key:
           &lt;invoice_key&gt;"
         </code>
       </q-card-section>
     </q-card>
   </q-expansion-item>
-  <q-expansion-item group="api" dense expand-separator label="Create a Temp">
+  <q-expansion-item group="api" dense expand-separator label="Create a MyExtension">
     <q-card>
       <q-card-section>
-        <code><span class="text-green">POST</span> /temp/api/v1/temps</code>
+        <code><span class="text-green">POST</span> /myextension/api/v1/temps</code>
         <h5 class="text-caption q-mt-sm q-mb-none">Headers</h5>
         <code>{"X-Api-Key": &lt;invoice_key&gt;}</code><br />
         <h5 class="text-caption q-mt-sm q-mb-none">Body (application/json)</h5>
@@ -43,7 +43,7 @@
         >
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
-          >curl -X POST {{ request.base_url }}temp/api/v1/temps -d '{"name":
+          >curl -X POST {{ request.base_url }}myextension/api/v1/temps -d '{"name":
           &lt;string&gt;, "currency": &lt;string&gt;}' -H "Content-type:
           application/json" -H "X-Api-Key: &lt;admin_key&gt;"
         </code>
@@ -55,14 +55,14 @@
     group="api"
     dense
     expand-separator
-    label="Delete a Temp"
+    label="Delete a MyExtension"
     class="q-pb-md"
   >
     <q-card>
       <q-card-section>
         <code
           ><span class="text-pink">DELETE</span>
-          /temp/api/v1/temps/&lt;temp_id&gt;</code
+          /myextension/api/v1/temps/&lt;myextension_id&gt;</code
         >
         <h5 class="text-caption q-mt-sm q-mb-none">Headers</h5>
         <code>{"X-Api-Key": &lt;admin_key&gt;}</code><br />
@@ -71,7 +71,7 @@
         <h5 class="text-caption q-mt-sm q-mb-none">Curl example</h5>
         <code
           >curl -X DELETE {{ request.base_url
-          }}temp/api/v1/temps/&lt;temp_id&gt; -H "X-Api-Key: &lt;admin_key&gt;"
+          }}myextension/api/v1/temps/&lt;myextension_id&gt; -H "X-Api-Key: &lt;admin_key&gt;"
         </code>
       </q-card-section>
     </q-card>
