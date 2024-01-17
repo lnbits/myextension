@@ -33,7 +33,7 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 @myextension_ext.get("/{myextension_id}")
 async def myextension(request: Request, myextension_id):
-    myextension = await get_myextension(myextension_id)
+    myextension = await get_myextension(myextension_id, request)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
@@ -43,8 +43,8 @@ async def myextension(request: Request, myextension_id):
         {
             "request": request,
             "myextension_id": myextension_id,
-            "lnurlpay": myextension.lnurlpayamount,
-            "lnurlwithdraw": myextension.lnurlwithdrawamount,
+            "lnurlpay": myextension.lnurlpay,
+            "lnurlwithdraw": myextension.lnurlwithdraw,
             "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
         },
     )

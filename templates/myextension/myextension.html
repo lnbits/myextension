@@ -7,7 +7,7 @@
           <a class="text-secondary" href="lightning:{{ lnurl }}">
             <q-responsive :ratio="1" class="q-mx-md">
               <qrcode
-                value="lightning:{{ lnurl }}"
+                :value="qrValue"
                 :options="{width: 800}"
                 class="rounded-borders"
               ></qrcode>
@@ -15,25 +15,36 @@
           </a>
         </div>
         <div class="row q-mt-lg q-gutter-sm">
-          <q-btn outline color="grey" @click="copyText('{{ lnurl }}')"
-            >Copy LNURL</q-btn
+          <q-btn outline color="grey" @click="copyText(qrValue)"
+            >Copy LNURL </q-btn
           >
-          <q-btn
-            outline
-            color="grey"
-            icon="nfc"
-            @click="writeNfcTag(' {{ lnurl }} ')"
-            :disable="nfcTagWriting"
-          ></q-btn>
         </div>
       </q-card-section>
+
+      <div class="row justify-start q-mt-lg">
+        <div class="col col-md-auto">
+          <q-btn outline style="color: primmary;" @click="qrValue = '{{ lnurlpay }}'">lnurlpay</q-btn>
+      
+        </div>
+        <div class="col col-md-auto">
+          <q-btn outline style="color: primmary;" @click="qrValue = '{{ lnurlwithdraw }}'">lnurlwithdraw</q-btn>
+      
+        </div>
+      </div>
+
     </q-card>
   </div>
   <div class="col-12 col-sm-6 col-md-5 col-lg-4 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <h6 class="text-subtitle1 q-mb-sm q-mt-none">LNbits LNURL-pay link</h6>
-        <p class="q-my-none">Use an LNURL compatible bitcoin wallet to pay.</p>
+        <h6 class="text-subtitle1 q-mb-sm q-mt-none">Public page</h6>
+        <p class="q-my-none">
+          Moat extensions have a public page that can be shared
+          (this page will still be accessible even if you have restricted 
+          access to your LNbits install).
+          <br/>
+          In this example when a user pays the LNURLpay it triggers an event via a websocket waiting for the payment.
+        </p>.</p>
       </q-card-section>
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
@@ -51,35 +62,13 @@
     mixins: [windowMixin],
     data: function () {
       return {
-        lnurlpay: "{{ lnurlpay|tojson }}",
-        lnurlwithdraw: "{{ lnurlwithdraw|tojson }}",
+        qrValue: ''
       }
     },
     created: function () {
-      if (this.g.user.wallets.length) {
-        this.getTemps()
-      }
+      this.qrValue = '{{lnurlpay}}'
     },
     methods: {
-      copyText: function (text) {
-        var self = this
-        navigator.clipboard.writeText(text).then(
-          function () {
-            self.$q.notify({
-              message: 'LNURL copied to clipboard',
-              color: 'positive',
-              icon: 'done',
-            })
-          },
-          function (err) {
-            self.$q.notify({
-              message: 'LNURL copy failed',
-              color: 'negative',
-              icon: 'error',
-            })
-          }
-        )
-      },
       createInvoice(walletId) {
         console.log(walletId)
         const wallet = _.findWhere(this.g.user.wallets, {
