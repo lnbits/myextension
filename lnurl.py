@@ -1,5 +1,6 @@
-# Maybe your extensions needs some LNURL stuff, if so checkout LNURLp/LNURLw extensions/lnurl library in LNbits (to keep things simple the below examples are raw LNURLs)
-
+# Maybe your extensions needs some LNURL stuff.
+# Here is a very simple example of how to do it.
+# Feel free to delete this file if you don't need it.
 
 from http import HTTPStatus
 from fastapi import Depends, Query, Request

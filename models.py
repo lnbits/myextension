@@ -18,13 +18,13 @@ class CreateMyExtensionData(BaseModel):
 
 class MyExtension(BaseModel):
     id: str
-    wallet: str
-    name: str
+    wallet: Optional[str]
+    name: Optional[str]
     total: Optional[int]
     lnurlpayamount: Optional[int]
     lnurlwithdrawamount: Optional[int]
-    lnurlpay: str
-    lnurlwithdraw: str
+    lnurlpay: Optional[str]
+    lnurlwithdraw: Optional[str]
 
     @classmethod
     def from_row(cls, row: Row) -> "MyExtension":

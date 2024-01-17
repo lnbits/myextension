@@ -1,7 +1,7 @@
 from typing import List, Optional, Union
 
 from lnbits.helpers import urlsafe_short_hash
-
+from lnbits.lnurl import encode as lnurl_encode
 from . import db
 from .models import CreateMyExtensionData, MyExtension
 from loguru import logger
@@ -28,9 +28,14 @@ async def create_myextension(wallet_id: str, data: CreateMyExtensionData) -> MyE
     return myextension
 
 
-async def get_myextension(myextension_id: str) -> Optional[MyExtension]:
+async def get_myextension(myextension_id: str, req: Request) -> Optional[MyExtension]:
     row = await db.fetchone("SELECT * FROM myextension.maintable WHERE id = ?", (myextension_id,))
-    return MyExtension(**row) if row else None
+    if not row:
+        return None
+    rowAmended = MyExtension(**row)
+    rowAmended.lnurlpay = lnurl_encode(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)._url)
+    rowAmended.lnurlwithdraw = lnurl_encode(req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)._url)
+    return rowAmended
 
 async def get_myextensions(wallet_ids: Union[str, List[str]], req: Request) -> List[MyExtension]:
     if isinstance(wallet_ids, str):
@@ -41,10 +46,9 @@ async def get_myextensions(wallet_ids: Union[str, List[str]], req: Request) -> L
         f"SELECT * FROM myextension.maintable WHERE wallet IN ({q})", (*wallet_ids,)
     )
     tempRows = [MyExtension(**row) for row in rows]
-    logger.debug(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id))
     for row in tempRows:
-        row.lnurlpay = req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)
-        row.lnurlwithdraw = req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)
+        row.lnurlpay = lnurl_encode(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)._url)
+        row.lnurlwithdraw = lnurl_encode(req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)._url)
     return tempRows
 
 async def update_myextension(myextension_id: str, **kwargs) -> MyExtension:

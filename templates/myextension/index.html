@@ -67,17 +67,6 @@
             target="_blank"
             ><q-tooltip>Open public page</q-tooltip></q-btn
           ></q-td>
-          <q-td auto-width>
-            <q-btn
-              unelevated
-              dense
-              size="md"
-              copy="copy"
-              @click="copyText(props.row.id)"
-              ><q-tooltip>Click to copy</q-tooltip
-              >${props.row.id.substring(0,6)}...</q-btn
-            >
-          </q-td>
         
         
             </q-tr>
@@ -163,22 +152,42 @@
 
   <q-dialog v-model="urlDialog.show" position="top">
     <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
+  
+
       <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
-        <lnbits-qrcode :value="urlDialog.data.lnurlpay"></lnbits-qrcode>
-      </q-responsive>
-      <div class="text-center q-mb-xl">
-        <p style="word-break: break-all">
-          <strong>${ urlDialog.data.lnurlpay }</strong><br />${
-          urlDialog.data.shareUrl }
-        </p>
+          <lnbits-qrcode
+          :value="qrValue"
+          ></lnbits-qrcode>
+          </q-responsive>
+          <center><q-btn label="copy" @click="copyText(qrValue)"></q-btn>
+          </center>
+
+          <q-separator></q-separator>
+
+      <div class="row justify-start q-mt-lg">
+        <div class="col col-md-auto">
+          <q-btn outline style="color: primmary;" @click="qrValue = urlDialog.data.lnurlpay">lnurlpay</q-btn>
+      
+        </div>
+        <div class="col col-md-auto">
+          <q-btn outline style="color: primmary;" @click="qrValue = urlDialog.data.lnurlwithdraw">lnurlwithdraw</q-btn>
+      
+        </div>
+        <div class="col q-pl-md">
+          <q-input filled bottom-slots dense v-model="invoiceAmount">
+            <template v-slot:append>
+              <q-btn round @click="createInvoice(urlDialog.data.wallet)" color="primary" flat icon="add_circle" />
+            </template>
+            <template v-slot:hint>
+              Create an invoice
+            </template>
+          </q-input>
+        </div>
       </div>
+
+
       <div class="row q-mt-lg">
-        <q-btn
-          outline
-          color="grey"
-          @click="copyText(urlDialog.data.lnurlpay, 'MyExtension URL copied to clipboard!')"
-          >Copy URL</q-btn
-        >
+        
         <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
       </div>
     </q-card>
@@ -186,6 +195,7 @@
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
+
   // The object returned here will be merged with the data object of the Vue instance
   const mapTemp = obj => {
     obj.date = Quasar.utils.date.formatDate(
@@ -202,6 +212,8 @@
     delimiters: ['${', '}'],
     data: function () {
       return {
+        invoiceAmount: 10,
+        qrValue: 'lnurlpay',
         temps: [],
         tempsTable: {
           columns: [
@@ -382,8 +394,32 @@
       },
       openUrlDialog(id) {
         this.urlDialog.data = _.findWhere(this.temps, {id})
+        this.qrValue = this.urlDialog.data.lnurlpay
         this.urlDialog.show = true
-      }
+      },
+      createInvoice(walletId) {
+        console.log(walletId)
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: walletId
+        })
+        console.log(wallet.inkey)
+        LNbits.api
+          .request(
+            'POST',
+            `/api/v1/payments`,
+            wallet.inkey,
+            { 
+              out: false,
+              amount: this.invoiceAmount,
+            }
+          )
+          .then(response => {
+            this.qrValue = response.data.payment_request
+          })
+          .catch(error => {
+            LNbits.utils.notifyApiError(error)
+          })
+      },
     },
     created: function () {
       if (this.g.user.wallets.length) {

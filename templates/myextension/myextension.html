@@ -51,15 +51,59 @@
     mixins: [windowMixin],
     data: function () {
       return {
-        lnurlpay: "",
-        lnurlwithdraw: "",
+        lnurlpay: "{{ lnurlpay|tojson }}",
+        lnurlwithdraw: "{{ lnurlwithdraw|tojson }}",
       }
     },
     created: function () {
       if (this.g.user.wallets.length) {
         this.getTemps()
       }
-    }
+    },
+    methods: {
+      copyText: function (text) {
+        var self = this
+        navigator.clipboard.writeText(text).then(
+          function () {
+            self.$q.notify({
+              message: 'LNURL copied to clipboard',
+              color: 'positive',
+              icon: 'done',
+            })
+          },
+          function (err) {
+            self.$q.notify({
+              message: 'LNURL copy failed',
+              color: 'negative',
+              icon: 'error',
+            })
+          }
+        )
+      },
+      createInvoice(walletId) {
+        console.log(walletId)
+        const wallet = _.findWhere(this.g.user.wallets, {
+          id: walletId
+        })
+        console.log(wallet.inkey)
+        LNbits.api
+          .request(
+            'POST',
+            `/api/v1/payments`,
+            wallet.inkey,
+            { 
+              out: false,
+              amount: this.invoiceAmount,
+            }
+          )
+          .then(response => {
+            this.qrValue = response.data.payment_request
+          })
+          .catch(error => {
+            LNbits.utils.notifyApiError(error)
+          })
+      },
+    },
   })
 </script>
 {% endblock %}

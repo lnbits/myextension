@@ -38,7 +38,9 @@ from .models import CreateMyExtensionData
 
 @myextension_ext.get("/api/v1/temps", status_code=HTTPStatus.OK)
 async def api_myextensions(
-    req: Request, all_wallets: bool = Query(False), wallet: WalletTypeInfo = Depends(get_key_type)
+    req: Request, all_wallets: 
+    bool = Query(False), 
+    wallet: WalletTypeInfo = Depends(get_key_type)
 ):
     wallet_ids = [wallet.wallet.id]
     if all_wallets:
@@ -46,14 +48,27 @@ async def api_myextensions(
         wallet_ids = user.wallet_ids if user else []
     return [myextension.dict() for myextension in await get_myextensions(wallet_ids, req)]
 
+## Get a single record
 
-## Get a specific record belonging to a user
+@myextension_ext.get("/api/v1/temps/{myextension_id}", status_code=HTTPStatus.OK)
+async def api_myextension(
+    req: Request,
+    myextension_id: str,
+    WalletTypeInfo = Depends(get_key_type)):
+    myextension = await get_myextension(myextension_id, req)
+    if not myextension:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+        )
+    return myextension.dict()
+
+## update a record
 
 @myextension_ext.put("/api/v1/temps/{myextension_id}")
 async def api_myextension_update(
     data: CreateMyExtensionData,
     myextension_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(get_key_type),
 ):
     if not myextension_id:
         raise HTTPException(
