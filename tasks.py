@@ -38,7 +38,7 @@ async def on_invoice_paid(payment: Payment) -> None:
     myextension = await get_myextension(myextension_id)
     assert myextension
 
-    # update something
+    # update something in the db
     
     data_to_update = {
         "total": myextension.total + payment.amount
@@ -46,9 +46,9 @@ async def on_invoice_paid(payment: Payment) -> None:
 
     await update_myextension(myextension_id=myextension_id, **data_to_update.dict())
 
-
     # here we could send some data to a websocket on wss://<your-lnbits>/api/v1/ws/<myextension_id>
-
+    # and then listen to it on the frontend, which we do with index.html connectWebocket()
+    
     some_payment_data = {
         "name": myextension.name,
         "amount": payment.amount,

@@ -195,9 +195,8 @@
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script>
-
   // The object returned here will be merged with the data object of the Vue instance
-  const mapTemp = obj => {
+  const mapMyExtension = obj => {
     obj.date = Quasar.utils.date.formatDate(
       new Date(obj.time * 1000),
       'YYYY-MM-DD HH:mm'
@@ -257,7 +256,7 @@
           withdrawbtwn: 10
         }
       },
-      getTemps: function () {
+      getMyExtensions: function () {
         var self = this
 
         LNbits.api
@@ -268,11 +267,11 @@
           )
           .then(function (response) {
             self.temps = response.data.map(function (obj) {
-              return mapTemp(obj)
+              return mapMyExtension(obj)
             })
           })
       },
-      sendTPosData() {
+      sendMyExtensionData() {
         const data = {
           name: this.formDialog.data.name,
           lnurlwithdrawamount: this.formDialog.data.lnurlwithdrawamount,
@@ -284,12 +283,12 @@
         console.log(data)
         console.log(wallet)
         if (data.id) {
-          this.updateTPos(wallet, data)
+          this.updateMyExtension(wallet, data)
         } else {
-          this.createTemp(wallet, data)
+          this.createMyExtension(wallet, data)
         }
       },
-      updateTPosForm(tempId) {
+      updateMyExtensionForm(tempId) {
         const myextension = _.findWhere(this.temps, {id: tempId})
         this.formDialog.data = {
           ...myextension,
@@ -303,18 +302,18 @@
         }
         this.formDialog.show = true
       },
-      createTemp(wallet, data) {
+      createMyExtension(wallet, data) {
         LNbits.api
           .request('POST', '/myextension/api/v1/temps', wallet.inkey, data)
           .then(response => {
-            this.temps.push(mapTemp(response.data))
+            this.temps.push(mapMyExtension(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
             LNbits.utils.notifyApiError(error)
           })
       },
-      updateTPos(wallet, data) {
+      updateMyExtension(wallet, data) {
         LNbits.api
           .request(
             'PUT',
@@ -333,7 +332,7 @@
             LNbits.utils.notifyApiError(error)
           })
       },
-      deleteTemp: function (tempId) {
+      deleteMyExtension: function (tempId) {
         var self = this
         var myextension = _.findWhere(this.temps, {id: tempId})
 
@@ -395,9 +394,13 @@
       openUrlDialog(id) {
         this.urlDialog.data = _.findWhere(this.temps, {id})
         this.qrValue = this.urlDialog.data.lnurlpay
+        this.connectWebocket(this.urlDialog.data.id)
         this.urlDialog.show = true
       },
       createInvoice(walletId) {
+      ///////////////////////////////////////////////////
+      ///Simple call to the api to create an invoice/////
+      ///////////////////////////////////////////////////
         console.log(walletId)
         const wallet = _.findWhere(this.g.user.wallets, {
           id: walletId
@@ -420,10 +423,36 @@
             LNbits.utils.notifyApiError(error)
           })
       },
+      connectWebocket(id){
+      //////////////////////////////////////////////////
+      ///wait for pay action to happen and do a thing////
+      ///////////////////////////////////////////////////
+        if (location.protocol !== 'http:') {
+        localUrl =
+          'wss://' +
+          document.domain +
+          ':' +
+          location.port +
+          '/api/v1/ws/' +
+          id
+      } else {
+        localUrl =
+          'ws://' +
+          document.domain +
+          ':' +
+          location.port +
+          '/api/v1/ws/' +
+          id
+      }
+      this.connection = new WebSocket(localUrl)
+      this.connection.onmessage = function (e) {
+        console.log(e)
+      }
+      }
     },
     created: function () {
       if (this.g.user.wallets.length) {
-        this.getTemps()
+        this.getMyExtensions()
         
       }
     }
