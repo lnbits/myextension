@@ -29,7 +29,8 @@ async def wait_for_paid_invoices():
 # do somethhing when an invoice related top this extension is paid
 
 async def on_invoice_paid(payment: Payment) -> None:
-    if payment.extra.get("tag") != "myextension":
+    logger.debug("payment received for myextension extension")
+    if payment.extra.get("tag") != "MyExtension":
         return
 
     myextension_id = payment.extra.get("tempId")

@@ -96,7 +96,7 @@
 
   <q-dialog v-model="formDialog.show" position="top" @hide="closeFormDialog">
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
-      <q-form @submit="sendTPosData" class="q-gutter-md">
+      <q-form @submit="sendMyExtensionData" class="q-gutter-md">
         <q-input
           filled
           dense
@@ -176,7 +176,7 @@
         <div class="col q-pl-md">
           <q-input filled bottom-slots dense v-model="invoiceAmount">
             <template v-slot:append>
-              <q-btn round @click="createInvoice(urlDialog.data.wallet)" color="primary" flat icon="add_circle" />
+              <q-btn round @click="createInvoice(urlDialog.data.wallet, urlDialog.data.id)" color="primary" flat icon="add_circle" />
             </template>
             <template v-slot:hint>
               Create an invoice
@@ -397,7 +397,7 @@
         this.connectWebocket(this.urlDialog.data.id)
         this.urlDialog.show = true
       },
-      createInvoice(walletId) {
+      createInvoice(walletId, myextensionId) {
       ///////////////////////////////////////////////////
       ///Simple call to the api to create an invoice/////
       ///////////////////////////////////////////////////
@@ -405,19 +405,25 @@
         const wallet = _.findWhere(this.g.user.wallets, {
           id: walletId
         })
-        console.log(wallet.inkey)
+        const dataToSend = {
+          out: false,
+          amount: this.invoiceAmount,
+          memo: 'Invoice created by MyExtension',
+          extra: {
+            tag: 'MyExtension'
+          }
+        }
+        console.log(dataToSend)
         LNbits.api
           .request(
             'POST',
             `/api/v1/payments`,
             wallet.inkey,
-            { 
-              out: false,
-              amount: this.invoiceAmount,
-            }
+            dataToSend
           )
           .then(response => {
             this.qrValue = response.data.payment_request
+            this.connectWebocket(myextensionId)
           })
           .catch(error => {
             LNbits.utils.notifyApiError(error)
