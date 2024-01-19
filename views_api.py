@@ -66,6 +66,7 @@ async def api_myextension(
 
 @myextension_ext.put("/api/v1/temps/{myextension_id}")
 async def api_myextension_update(
+    req: Request,
     data: CreateMyExtensionData,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
@@ -74,12 +75,12 @@ async def api_myextension_update(
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    myextension = await get_myextension(myextension_id)
+    myextension = await get_myextension(myextension_id, req)
     assert myextension, "MyExtension couldn't be retrieved"
 
     if wallet.wallet.id != myextension.wallet:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension.")
-    myextension = await update_myextension(myextension_id=myextension_id, **data.dict())
+    myextension = await update_myextension(myextension_id=myextension_id, **data.dict(), req=req)
     return myextension.dict()
 
 
@@ -87,9 +88,11 @@ async def api_myextension_update(
 
 @myextension_ext.post("/api/v1/temps", status_code=HTTPStatus.CREATED)
 async def api_myextension_create(
-    data: CreateMyExtensionData, wallet: WalletTypeInfo = Depends(get_key_type)
+    req: Request,
+    data: CreateMyExtensionData, 
+    wallet: WalletTypeInfo = Depends(get_key_type)
 ):
-    myextension = await create_myextension(wallet_id=wallet.wallet.id, data=data)
+    myextension = await create_myextension(wallet_id=wallet.wallet.id, data=data, req=req)
     return myextension.dict()
 
 

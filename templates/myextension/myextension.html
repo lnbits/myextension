@@ -62,36 +62,73 @@
     mixins: [windowMixin],
     data: function () {
       return {
-        qrValue: ''
+        qrValue: '',
+        myExtensionID: ''
       }
     },
     created: function () {
       this.qrValue = '{{lnurlpay}}'
+      this.myExtensionID = '{{myextension_id}}'
+      this.connectWebocket(this.myExtensionID)
     },
     methods: {
-      createInvoice(walletId) {
-        console.log(walletId)
-        const wallet = _.findWhere(this.g.user.wallets, {
-          id: walletId
-        })
-        console.log(wallet.inkey)
-        LNbits.api
-          .request(
-            'POST',
-            `/api/v1/payments`,
-            wallet.inkey,
-            { 
-              out: false,
-              amount: this.invoiceAmount,
-            }
-          )
-          .then(response => {
-            this.qrValue = response.data.payment_request
+      makeItRain() {
+        document.getElementById("vue").disabled = true
+        var end = Date.now() + (2 * 1000)
+        var colors = ['#FFD700', '#ffffff']
+        function frame() {
+          confetti({
+            particleCount: 2,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors,
+            zIndex: 999999
           })
-          .catch(error => {
-            LNbits.utils.notifyApiError(error)
+          confetti({
+            particleCount: 2,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors,
+            zIndex: 999999
           })
+          if (Date.now() < end) {
+            requestAnimationFrame(frame)
+          }
+          else {
+            document.getElementById("vue").disabled = false
+          }
+        }
+        frame()
       },
+      connectWebocket(id){
+      //////////////////////////////////////////////////
+      ///wait for pay action to happen and do a thing////
+      ///////////////////////////////////////////////////
+      self = this
+        if (location.protocol !== 'http:') {
+        localUrl =
+          'wss://' +
+          document.domain +
+          ':' +
+          location.port +
+          '/api/v1/ws/' +
+          id
+      } else {
+        localUrl =
+          'ws://' +
+          document.domain +
+          ':' +
+          location.port +
+          '/api/v1/ws/' +
+          id
+      }
+      this.connection = new WebSocket(localUrl)
+      this.connection.onmessage = function (e) {
+        self.makeItRain()
+      }
+      }
     },
   })
 </script>

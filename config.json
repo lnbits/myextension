@@ -1,7 +1,7 @@
 {
   "name": "MyExtension",
   "short_description": "Minimal extension to build on",
-  "tile": "/myextension/static/image/myextension.png",
+  "tile": "/myextension/static/myextension.png",
   "contributors": ["arcbtc"],
   "min_lnbits_version": "0.0.1"
 }

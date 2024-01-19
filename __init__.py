@@ -27,6 +27,6 @@ from .tasks import wait_for_paid_invoices
 from .views import *
 from .views_api import *
 
-def temp_start():
+def myextension_start():
     loop = asyncio.get_event_loop()
     loop.create_task(catch_everything_and_restart(wait_for_paid_invoices))

@@ -1,6 +1,6 @@
 {% extends "base.html" %} {% from "macros.jinja" import window_vars with context
 %} {% block page %}
-<div class="row q-col-gutter-md">
+<div class="row q-col-gutter-md" id="makeItRain">
   <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
     <q-card>
       <q-card-section>
@@ -67,7 +67,32 @@
             target="_blank"
             ><q-tooltip>Open public page</q-tooltip></q-btn
           ></q-td>
-        
+
+          <q-td>
+            <q-btn
+              flat
+              dense
+              size="xs"
+              @click="updateMyExtensionForm(props.row.id)"
+              icon="edit"
+              color="light-blue"
+            >
+              <q-tooltip> Edit copilot </q-tooltip>
+            </q-btn>
+          </q-td>
+
+          <q-td>
+            <q-btn
+              flat
+              dense
+              size="xs"
+              @click="deleteMyExtension(props.row.id)"
+              icon="cancel"
+              color="pink"
+            >
+              <q-tooltip> Delete copilot </q-tooltip>
+            </q-btn>
+          </q-td>
         
             </q-tr>
           </template>
@@ -194,6 +219,7 @@
   </q-dialog>
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 <script>
   // The object returned here will be merged with the data object of the Vue instance
   const mapMyExtension = obj => {
@@ -204,7 +230,6 @@
     obj.myextension = ['/myextension/', obj.id].join('')
     return obj
   }
-
   new Vue({
     el: '#vue',
     mixins: [windowMixin],
@@ -280,9 +305,10 @@
         const wallet = _.findWhere(this.g.user.wallets, {
           id: this.formDialog.data.wallet
         })
-        console.log(data)
-        console.log(wallet)
-        if (data.id) {
+        if (this.formDialog.data.id) {
+          data.id = this.formDialog.data.id
+          data.wallet = wallet.id
+          data.total = this.formDialog.data.total
           this.updateMyExtension(wallet, data)
         } else {
           this.createMyExtension(wallet, data)
@@ -291,8 +317,7 @@
       updateMyExtensionForm(tempId) {
         const myextension = _.findWhere(this.temps, {id: tempId})
         this.formDialog.data = {
-          ...myextension,
-          tip_options: JSON.parse(myextension.tip_options)
+          ...myextension
         }
         if (this.formDialog.data.tip_wallet != '') {
           this.formDialog.advanced.tips = true
@@ -325,7 +350,7 @@
             this.temps = _.reject(this.temps, obj => {
               return obj.id == data.id
             })
-            this.temps.push(mapTemp(response.data))
+            this.temps.push(mapMyExtension(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
@@ -410,10 +435,10 @@
           amount: this.invoiceAmount,
           memo: 'Invoice created by MyExtension',
           extra: {
-            tag: 'MyExtension'
+            tag: 'MyExtension',
+            myextensionId: myextensionId
           }
         }
-        console.log(dataToSend)
         LNbits.api
           .request(
             'POST',
@@ -423,16 +448,46 @@
           )
           .then(response => {
             this.qrValue = response.data.payment_request
-            this.connectWebocket(myextensionId)
           })
           .catch(error => {
             LNbits.utils.notifyApiError(error)
           })
       },
+      makeItRain() {
+        document.getElementById("vue").disabled = true
+        var end = Date.now() + (2 * 1000)
+        var colors = ['#FFD700', '#ffffff']
+        function frame() {
+          confetti({
+            particleCount: 2,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 },
+            colors: colors,
+            zIndex: 999999
+          })
+          confetti({
+            particleCount: 2,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 },
+            colors: colors,
+            zIndex: 999999
+          })
+          if (Date.now() < end) {
+            requestAnimationFrame(frame)
+          }
+          else {
+            document.getElementById("vue").disabled = false
+          }
+        }
+        frame()
+      },
       connectWebocket(id){
       //////////////////////////////////////////////////
       ///wait for pay action to happen and do a thing////
       ///////////////////////////////////////////////////
+      self = this
         if (location.protocol !== 'http:') {
         localUrl =
           'wss://' +
@@ -452,14 +507,13 @@
       }
       this.connection = new WebSocket(localUrl)
       this.connection.onmessage = function (e) {
-        console.log(e)
+        self.makeItRain()
       }
       }
     },
     created: function () {
       if (this.g.user.wallets.length) {
         this.getMyExtensions()
-        
       }
     }
   })
