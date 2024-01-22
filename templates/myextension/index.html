@@ -419,6 +419,7 @@
       openUrlDialog(id) {
         this.urlDialog.data = _.findWhere(this.temps, {id})
         this.qrValue = this.urlDialog.data.lnurlpay
+        console.log(this.urlDialog.data.id)
         this.connectWebocket(this.urlDialog.data.id)
         this.urlDialog.show = true
       },

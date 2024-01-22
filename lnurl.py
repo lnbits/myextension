@@ -7,7 +7,8 @@ from fastapi import Depends, Query, Request
 from . import myextension_ext
 from .crud import get_myextension
 from lnbits.core.services import create_invoice
-
+from loguru import logger
+from uuid import UUID
 
 #################################################
 ########### A very simple LNURLpay ##############
@@ -29,8 +30,8 @@ async def api_lnurl_pay(
         return {"status": "ERROR", "reason": "No myextension found"}
     return {
             "callback": str(request.url_for("myextension.api_lnurl_pay_callback", myextension_id=myextension_id)),
-            "maxSendable": myextension.lnurlpayamount,
-            "minSendable": myextension.lnurlpayamount,
+            "maxSendable": myextension.lnurlpayamount * 1000,
+            "minSendable": myextension.lnurlpayamount * 1000,
             "metadata":"[[\"text/plain\", \"" + myextension.name + "\"]]",
             "tag": "payRequest"
         }
@@ -46,21 +47,29 @@ async def api_lnurl_pay_cb(
     amount: int = Query(...),
 ):
     myextension = await get_myextension(myextension_id)
+    logger.debug(myextension)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
     
-    payment_request = await create_invoice(
+    payment_hash, payment_request = await create_invoice(
         wallet_id=myextension.wallet,
         amount=int(amount / 1000),
         memo=myextension.name,
-        unhashed_description="[[\"text/plain\", \"" + myextension.name + "\"]]".encode(),
+        unhashed_description=f"[[\"text/plain\", \"{myextension.name}\"]]".encode(),
         extra= {
-            "tag": "myextension",
-            "link": myextension_id,
+            "tag": "MyExtension",
+            "myextensionId": myextension_id,
             "extra": request.query_params.get("amount"),
         },
     )
-    return { "pr": payment_request, "routes": []}
+    return {
+        "pr": payment_request, 
+        "routes": [],
+        "successAction": {
+            "tag": "message",
+            "message": f"Paid {myextension.name}"
+        }
+    }
 
 #################################################
 ######## A very simple LNURLwithdraw ############
@@ -81,13 +90,20 @@ async def api_lnurl_pay(
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
+    k1 = UUID(myextension_id + str(myextension.ticker), version=4)
+    data_to_update = {
+        "ticker": myextension.ticker + 1
+    }
+    
+    await update_myextension(myextension_id=myextension_id, **data_to_update)
+
     return {
             "callback": str(request.url_for("myextension.api_lnurl_withdraw_callback", myextension_id=myextension_id)),
             "maxSendable": myextension.lnurlwithdrawamount,
             "minSendable": myextension.lnurlwithdrawamount,
-            "k1": "",
+            "k1": k1,
             "defaultDescription": myextension.name,
-            "metadata":"[[\"text/plain\", \"" + myextension.name + "\"]]",
+            "metadata":f"[[\"text/plain\", \"{myextension.name}\"]]",
             "tag": "withdrawRequest"
         }
 
@@ -96,24 +112,31 @@ async def api_lnurl_pay(
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw_callback",
 )
-async def api_lnurl_pay_cb(
+async def api_lnurl_withdraw_cb(
     request: Request,
     myextension_id: str,
-    amount: int = Query(...),
+    pr: Optional[str] = None,
+    k1: Optional[str] = None,
 ):
+    assert k1, "k1 is required"
+    assert pr, "pr is required"
+
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
     
-    payment_request = await create_invoice(
-        wallet_id=myextension.wallet,
-        amount=int(amount / 1000),
-        memo=myextension.name,
-        unhashed_description="[[\"text/plain\", \"" + myextension.name + "\"]]".encode(),
-        extra= {
-            "tag": "myextension",
-            "link": myextension_id,
-            "extra": request.query_params.get("amount"),
-        },
-    )
-    return { "pr": payment_request, "routes": []}
+    k1Check = UUID(myextension_id + str(myextension.ticker - 1), version=4)
+    if k1Check != k1:
+        return {"status": "ERROR", "reason": "Already spent"}
+    try:
+        await pay_invoice(
+            wallet_id=tpos.wallet,
+            payment_request=pr,
+            max_sat=myextension.lnurlwithdrawamount * 1000,
+            extra={"tag": "MyExtension", "myextensionId": myextension_id,}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
+        )
+    return {"status": "OK"}
