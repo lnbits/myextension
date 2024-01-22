@@ -9,6 +9,7 @@ from .crud import get_myextension
 from lnbits.core.services import create_invoice
 from loguru import logger
 from uuid import UUID
+from typing import Optional
 
 #################################################
 ########### A very simple LNURLpay ##############
