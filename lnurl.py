@@ -6,10 +6,11 @@ from http import HTTPStatus
 from fastapi import Depends, Query, Request
 from . import myextension_ext
 from .crud import get_myextension
-from lnbits.core.services import create_invoice
+from lnbits.core.services import create_invoice, pay_invoice
 from loguru import logger
-from uuid import UUID
 from typing import Optional
+from .crud import update_myextension
+import shortuuid
 
 #################################################
 ########### A very simple LNURLpay ##############
@@ -91,17 +92,11 @@ async def api_lnurl_pay(
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
-    k1 = UUID(myextension_id + str(myextension.ticker), version=4)
-    data_to_update = {
-        "ticker": myextension.ticker + 1
-    }
-    
-    await update_myextension(myextension_id=myextension_id, **data_to_update)
-
+    k1 = shortuuid.uuid(name=myextension.id + str(myextension.ticker))
     return {
             "callback": str(request.url_for("myextension.api_lnurl_withdraw_callback", myextension_id=myextension_id)),
-            "maxSendable": myextension.lnurlwithdrawamount,
-            "minSendable": myextension.lnurlwithdrawamount,
+            "maxSendable": myextension.lnurlwithdrawamount * 1000,
+            "minSendable": myextension.lnurlwithdrawamount * 1000,
             "k1": k1,
             "defaultDescription": myextension.name,
             "metadata":f"[[\"text/plain\", \"{myextension.name}\"]]",
@@ -109,7 +104,7 @@ async def api_lnurl_pay(
         }
 
 @myextension_ext.get(
-    "/api/v1/lnurl/pay/cb/{myextension_id}", 
+    "/api/v1/lnurl/withdraw/cb/{myextension_id}", 
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw_callback",
 )
@@ -126,18 +121,13 @@ async def api_lnurl_withdraw_cb(
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
     
-    k1Check = UUID(myextension_id + str(myextension.ticker - 1), version=4)
+    k1Check = shortuuid.uuid(name=myextension.id + str(myextension.ticker - 1))
     if k1Check != k1:
         return {"status": "ERROR", "reason": "Already spent"}
-    try:
-        await pay_invoice(
-            wallet_id=tpos.wallet,
-            payment_request=pr,
-            max_sat=myextension.lnurlwithdrawamount * 1000,
-            extra={"tag": "MyExtension", "myextensionId": myextension_id,}
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=HTTPStatus.BAD_REQUEST, detail=f"withdraw not working. {str(e)}"
-        )
+    await pay_invoice(
+        wallet_id=myextension.wallet,
+        payment_request=pr,
+        max_sat=int(myextension.lnurlwithdrawamount * 1000),
+        extra={"tag": "MyExtension", "myextensionId": myextension_id,}
+    )
     return {"status": "OK"}

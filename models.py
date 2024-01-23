@@ -15,6 +15,7 @@ class CreateMyExtensionData(BaseModel):
     total: Optional[int]
     lnurlpayamount: Optional[int]
     lnurlwithdrawamount: Optional[int]
+    ticker: Optional[int]
 
 class MyExtension(BaseModel):
     id: str
@@ -25,6 +26,7 @@ class MyExtension(BaseModel):
     lnurlwithdrawamount: Optional[int]
     lnurlpay: Optional[str]
     lnurlwithdraw: Optional[str]
+    ticker: Optional[int]
 
     @classmethod
     def from_row(cls, row: Row) -> "MyExtension":
