@@ -1,4 +1,4 @@
-# Maybe your extensions needs some LNURL stuff.
+# Maybe your extension needs some LNURL stuff.
 # Here is a very simple example of how to do it.
 # Feel free to delete this file if you don't need it.
 
@@ -82,11 +82,12 @@ async def api_lnurl_pay_cb(
 ######## A very simple LNURLwithdraw ############
 # https://github.com/lnurl/luds/blob/luds/03.md #
 #################################################
+## withdraws are unique, removing 'tickerhash' ##
+## here and crud.py will allow muliple pulls ####
 #################################################
 
-
 @myextension_ext.get(
-    "/api/v1/lnurl/withdraw/{myextension_id}/{tickerhash}/",
+    "/api/v1/lnurl/withdraw/{myextension_id}/{tickerhash}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw",
 )

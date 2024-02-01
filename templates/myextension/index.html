@@ -1,3 +1,7 @@
+<!--/////////////////////////////////////////////////-->
+<!--//PAGE FOR THE EXTENSIONS BACKEND IN LNBITS//////-->
+<!--/////////////////////////////////////////////////-->
+
 {% extends "base.html" %} {% from "macros.jinja" import window_vars with context
 %} {% block page %}
 <div class="row q-col-gutter-md" id="makeItRain">
@@ -80,6 +84,10 @@
     </q-card>
   </div>
 
+  <!--/////////////////////////////////////////////////-->
+  <!--//////////////FORM DIALOG////////////////////////-->
+  <!--/////////////////////////////////////////////////-->
+
   <q-dialog v-model="formDialog.show" position="top" @hide="closeFormDialog">
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
       <q-form @submit="sendMyExtensionData" class="q-gutter-md">
@@ -102,10 +110,12 @@
     </q-card>
   </q-dialog>
 
+  <!--/////////////////////////////////////////////////-->
+  <!--//////////////QR Code DIALOG/////////////////////-->
+  <!--/////////////////////////////////////////////////-->
+
   <q-dialog v-model="urlDialog.show" position="top">
     <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
-
-
       <q-responsive :ratio="1" class="q-mx-xl q-mb-md">
         <lnbits-qrcode :value="qrValue"></lnbits-qrcode>
       </q-responsive>
@@ -135,19 +145,20 @@
           </q-input>
         </div>
       </div>
-
-
       <div class="row q-mt-lg">
-
         <q-btn v-close-popup flat color="grey" class="q-ml-auto">Close</q-btn>
       </div>
     </q-card>
   </q-dialog>
+  
 </div>
 {% endblock %} {% block scripts %} {{ window_vars(user) }}
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
 <script>
-  // The object returned here will be merged with the data object of the Vue instance
+
+  ///////////////////////////////////////////////////
+  //////////an object we can update with data////////
+  ///////////////////////////////////////////////////
   const mapMyExtension = obj => {
     obj.date = Quasar.utils.date.formatDate(
       new Date(obj.time * 1000),
@@ -199,6 +210,11 @@
         }
       }
     },
+
+    ///////////////////////////////////////////////////
+    ////////////////METHODS FUNCTIONS//////////////////
+    ///////////////////////////////////////////////////
+
     methods: {
       closeFormDialog() {
         this.formDialog.show = false
@@ -439,6 +455,10 @@
         }
       }
     },
+
+    ///////////////////////////////////////////////////
+    //////LIFECYCLE FUNCTIONS RUNNING ON PAGE LOAD/////
+    ///////////////////////////////////////////////////
     created: function () {
       if (this.g.user.wallets.length) {
         this.getMyExtensions()
