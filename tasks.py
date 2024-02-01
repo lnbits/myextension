@@ -11,11 +11,10 @@ from .crud import get_myextension, update_myextension
 
 
 #######################################
-########## RUN YOUR TASKS HERE #########
+########## RUN YOUR TASKS HERE ########
 #######################################
 
-
-# the usual task is to listen to invoices related to this extension
+# The usual task is to listen to invoices related to this extension
 
 
 async def wait_for_paid_invoices():
@@ -27,7 +26,7 @@ async def wait_for_paid_invoices():
         await on_invoice_paid(payment)
 
 
-# do somethhing when an invoice related top this extension is paid
+# Do somethhing when an invoice related top this extension is paid
 
 
 async def on_invoice_paid(payment: Payment) -> None:

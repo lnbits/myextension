@@ -1,5 +1,4 @@
-# Models for retrieving data from the database
-# Includes some classmethods where we can add some logic to the data
+# Data models for your extension
 
 from sqlite3 import Row
 from typing import Optional, List

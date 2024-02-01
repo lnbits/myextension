@@ -86,6 +86,7 @@ async def api_lnurl_pay_cb(
 ## here and crud.py will allow muliple pulls ####
 #################################################
 
+
 @myextension_ext.get(
     "/api/v1/lnurl/withdraw/{myextension_id}/{tickerhash}",
     status_code=HTTPStatus.OK,
