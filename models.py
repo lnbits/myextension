@@ -9,6 +9,7 @@ from fastapi import Request
 from lnbits.lnurl import encode as lnurl_encode
 from urllib.parse import urlparse
 
+
 class CreateMyExtensionData(BaseModel):
     wallet: Optional[str]
     name: Optional[str]
@@ -16,6 +17,7 @@ class CreateMyExtensionData(BaseModel):
     lnurlpayamount: Optional[int]
     lnurlwithdrawamount: Optional[int]
     ticker: Optional[int]
+
 
 class MyExtension(BaseModel):
     id: str

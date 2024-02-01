@@ -22,6 +22,7 @@ temps = Jinja2Templates(directory="temps")
 
 # Backend admin page
 
+
 @myextension_ext.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return myextension_renderer().TemplateResponse(
@@ -30,6 +31,7 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 
 # Frontend shareable page
+
 
 @myextension_ext.get("/{myextension_id}")
 async def myextension(request: Request, myextension_id):
@@ -52,9 +54,10 @@ async def myextension(request: Request, myextension_id):
 
 # Manifest for public page, customise or remove manifest completely
 
+
 @myextension_ext.get("/manifest/{myextension_id}.webmanifest")
 async def manifest(myextension_id: str):
-    myextension= await get_myextension(myextension_id)
+    myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."

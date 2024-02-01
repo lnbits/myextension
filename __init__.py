@@ -8,9 +8,7 @@ from lnbits.tasks import catch_everything_and_restart
 
 db = Database("ext_myextension")
 
-myextension_ext: APIRouter = APIRouter(
-    prefix="/myextension", tags=["MyExtension"]
-)
+myextension_ext: APIRouter = APIRouter(prefix="/myextension", tags=["MyExtension"])
 
 temp_static_files = [
     {
@@ -19,13 +17,16 @@ temp_static_files = [
     }
 ]
 
+
 def myextension_renderer():
     return template_renderer(["myextension/templates"])
+
 
 from .lnurl import *
 from .tasks import wait_for_paid_invoices
 from .views import *
 from .views_api import *
+
 
 def myextension_start():
     loop = asyncio.get_event_loop()

@@ -1,5 +1,6 @@
 # The migration file is like a blockchain, never edit only add!
 
+
 async def m001_initial(db):
     """
     Initial templates table.
@@ -19,7 +20,9 @@ async def m001_initial(db):
     """
     )
 
+
 # Here we add another field to the database
+
 
 async def m002_addtip_wallet(db):
     """
