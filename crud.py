@@ -7,6 +7,7 @@ from .models import CreateMyExtensionData, MyExtension
 from loguru import logger
 from fastapi import Request
 from lnurl import encode as lnurl_encode
+import shortuuid
 
 async def create_myextension(wallet_id: str, data: CreateMyExtensionData, req: Request) -> MyExtension:
     myextension_id = urlsafe_short_hash()
@@ -35,8 +36,15 @@ async def get_myextension(myextension_id: str, req: Optional[Request] = None) ->
         return None
     rowAmended = MyExtension(**row)
     if req:
-        rowAmended.lnurlpay = lnurl_encode(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)._url)
-        rowAmended.lnurlwithdraw = lnurl_encode(req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)._url)
+        rowAmended.lnurlpay = lnurl_encode(
+            req.url_for("myextension.api_lnurl_pay", 
+            myextension_id=row.id)._url
+            )
+        rowAmended.lnurlwithdraw = lnurl_encode(
+            req.url_for("myextension.api_lnurl_withdraw", 
+            myextension_id=row.id, 
+            tickerhash=shortuuid.uuid(name=rowAmended.id + str(rowAmended.ticker)))._url
+            )
     return rowAmended
 
 async def get_myextensions(wallet_ids: Union[str, List[str]], req: Optional[Request] = None) -> List[MyExtension]:
@@ -50,8 +58,15 @@ async def get_myextensions(wallet_ids: Union[str, List[str]], req: Optional[Requ
     tempRows = [MyExtension(**row) for row in rows]
     if req:
         for row in tempRows:
-            row.lnurlpay = lnurl_encode(req.url_for("myextension.api_lnurl_pay", myextension_id=row.id)._url)
-            row.lnurlwithdraw = lnurl_encode(req.url_for("myextension.api_lnurl_withdraw", myextension_id=row.id)._url)
+            row.lnurlpay = lnurl_encode(
+                req.url_for("myextension.api_lnurl_pay", 
+                myextension_id=row.id)._url
+                )
+            row.lnurlwithdraw = lnurl_encode(
+                req.url_for("myextension.api_lnurl_withdraw", 
+                myextension_id=row.id, 
+                tickerhash=shortuuid.uuid(name=row.id + str(row.ticker)))._url
+            )
     return tempRows
 
 async def update_myextension(myextension_id: str, req: Optional[Request] = None, **kwargs) -> MyExtension:

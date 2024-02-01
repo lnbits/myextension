@@ -43,7 +43,8 @@
               :key="col.name"
               :props="props"
             >
-            ${ col.value }
+            <div v-if="col.field == 'total'">${ col.value / 1000} sats</div>
+            <div v-else>${ col.value }</div>
           </q-td>
             <q-td auto-width>
             <q-btn
@@ -248,7 +249,8 @@
               align: 'left',
               label: 'Wallet',
               field: 'wallet'
-            }
+            },
+            {name: 'total', align: 'left', label: 'Total sent/received', field: 'total'},
           ],
           pagination: {
             rowsPerPage: 10

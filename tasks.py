@@ -38,8 +38,12 @@ async def on_invoice_paid(payment: Payment) -> None:
     myextension = await get_myextension(myextension_id)
 
     # update something in the db
+    if payment.extra.get("lnurlwithdraw"):
+        total = myextension.total - payment.amount
+    else:
+        total = myextension.total + payment.amount
     data_to_update = {
-        "total": myextension.total + payment.amount
+        "total": total
     }
     
     await update_myextension(myextension_id=myextension_id, **data_to_update)

@@ -10,6 +10,7 @@ from lnbits.core.services import create_invoice, pay_invoice
 from loguru import logger
 from typing import Optional
 from .crud import update_myextension
+from .models import MyExtension
 import shortuuid
 
 #################################################
@@ -81,26 +82,29 @@ async def api_lnurl_pay_cb(
 
 
 @myextension_ext.get(
-    "/api/v1/lnurl/withdraw/{myextension_id}",
+    "/api/v1/lnurl/withdraw/{myextension_id}/{tickerhash}/",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw",
 )
-async def api_lnurl_pay(
+async def api_lnurl_withdraw(
     request: Request,
     myextension_id: str,
+    tickerhash: str,
 ):
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
     k1 = shortuuid.uuid(name=myextension.id + str(myextension.ticker))
+    if k1 != tickerhash:
+        return {"status": "ERROR", "reason": "LNURLw already used"}
+
     return {
+            "tag": "withdrawRequest",
             "callback": str(request.url_for("myextension.api_lnurl_withdraw_callback", myextension_id=myextension_id)),
-            "maxSendable": myextension.lnurlwithdrawamount * 1000,
-            "minSendable": myextension.lnurlwithdrawamount * 1000,
             "k1": k1,
             "defaultDescription": myextension.name,
-            "metadata":f"[[\"text/plain\", \"{myextension.name}\"]]",
-            "tag": "withdrawRequest"
+            "maxWithdrawable": myextension.lnurlwithdrawamount * 1000,
+            "minWithdrawable": myextension.lnurlwithdrawamount * 1000
         }
 
 @myextension_ext.get(
@@ -114,20 +118,26 @@ async def api_lnurl_withdraw_cb(
     pr: Optional[str] = None,
     k1: Optional[str] = None,
 ):
+
     assert k1, "k1 is required"
     assert pr, "pr is required"
-
+    logger.debug("cunt")
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
     
-    k1Check = shortuuid.uuid(name=myextension.id + str(myextension.ticker - 1))
+    k1Check = shortuuid.uuid(name=myextension.id + str(myextension.ticker))
     if k1Check != k1:
-        return {"status": "ERROR", "reason": "Already spent"}
+        return {"status": "ERROR", "reason": "Wrong k1 check provided"}
+
+    await update_myextension(myextension_id=myextension_id, ticker=myextension.ticker + 1)
+    logger.debug(myextension.wallet)
+    logger.debug(pr)
+    logger.debug(int(myextension.lnurlwithdrawamount * 1000))
     await pay_invoice(
         wallet_id=myextension.wallet,
         payment_request=pr,
         max_sat=int(myextension.lnurlwithdrawamount * 1000),
-        extra={"tag": "MyExtension", "myextensionId": myextension_id,}
+        extra={"tag": "MyExtension", "myextensionId": myextension_id, "lnurlwithdraw": True}
     )
     return {"status": "OK"}

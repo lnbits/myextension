@@ -15,7 +15,7 @@ myextension_ext: APIRouter = APIRouter(
 temp_static_files = [
     {
         "path": "/myextension/static",
-        "name": "temp_static",
+        "name": "myextension_static",
     }
 ]
 
