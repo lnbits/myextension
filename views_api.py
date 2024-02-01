@@ -101,7 +101,7 @@ async def api_myextension_update(
 async def api_myextension_create(
     req: Request,
     data: CreateMyExtensionData,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
     myextension = await create_myextension(
         wallet_id=wallet.wallet.id, data=data, req=req

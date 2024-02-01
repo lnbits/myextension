@@ -256,7 +256,7 @@
       },
       createMyExtension(wallet, data) {
         LNbits.api
-          .request('POST', '/myextension/api/v1/temps', wallet.inkey, data)
+          .request('POST', '/myextension/api/v1/temps', wallet.adminkey, data)
           .then(response => {
             this.temps.push(mapMyExtension(response.data))
             this.closeFormDialog()
