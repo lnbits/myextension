@@ -24,10 +24,6 @@
           <q-btn outline style="color: primmary;" @click="qrValue = '{{ lnurlpay }}'">lnurlpay</q-btn>
 
         </div>
-        <div class="col col-md-auto">
-          <q-btn outline style="color: primmary;" @click="qrValue = '{{ lnurlwithdraw }}'">lnurlwithdraw</q-btn>
-
-        </div>
       </div>
 
     </q-card>
@@ -108,17 +104,13 @@
         if (location.protocol !== 'http:') {
           localUrl =
             'wss://' +
-            document.domain +
-            ':' +
-            location.port +
+            location.host +
             '/api/v1/ws/' +
             id
         } else {
           localUrl =
             'ws://' +
-            document.domain +
-            ':' +
-            location.port +
+            location.host +
             '/api/v1/ws/' +
             id
         }

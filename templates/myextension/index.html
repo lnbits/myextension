@@ -427,7 +427,7 @@
         }
         frame()
       },
-      connectWebocket(id) {
+      connectWebocket(wallet_id) {
         //////////////////////////////////////////////////
         ///wait for pay action to happen and do a thing////
         ///////////////////////////////////////////////////
@@ -439,7 +439,7 @@
             ':' +
             location.port +
             '/api/v1/ws/' +
-            id
+            wallet_id
         } else {
           localUrl =
             'ws://' +
@@ -447,7 +447,7 @@
             ':' +
             location.port +
             '/api/v1/ws/' +
-            id
+            wallet_id
         }
         this.connection = new WebSocket(localUrl)
         this.connection.onmessage = function (e) {
