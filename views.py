@@ -46,7 +46,6 @@ async def myextension(request: Request, myextension_id):
             "request": request,
             "myextension_id": myextension_id,
             "lnurlpay": myextension.lnurlpay,
-            "lnurlwithdraw": myextension.lnurlwithdraw,
             "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
         },
     )
