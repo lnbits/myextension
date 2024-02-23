@@ -19,13 +19,6 @@
         </div>
       </q-card-section>
 
-      <div class="row justify-start q-mt-lg">
-        <div class="col col-md-auto">
-          <q-btn outline style="color: primmary;" @click="qrValue = '{{ lnurlpay }}'">lnurlpay</q-btn>
-
-        </div>
-      </div>
-
     </q-card>
   </div>
   <div class="col-12 col-sm-6 col-md-5 col-lg-4 q-gutter-y-md">
@@ -36,7 +29,7 @@
           Moat extensions have a public page that can be shared
           (this page will still be accessible even if you have restricted
           access to your LNbits install).
-          <br />
+          <br /><br />
           In this example when a user pays the LNURLpay it triggers an event via a websocket waiting for the payment.
         </p>.</p>
       </q-card-section>
@@ -56,70 +49,16 @@
     mixins: [windowMixin],
     data: function () {
       return {
-        qrValue: '',
+        qrValue: '{{myextension_id}}',
         myExtensionID: ''
       }
     },
     created: function () {
-      this.qrValue = '{{lnurlpay}}'
-      this.myExtensionID = '{{myextension_id}}'
-      this.connectWebocket(this.myExtensionID)
+      // Will trigger payment reaction when payment received, sent from tasks.py
+      eventReactionWebocket(this.myExtensionID)
     },
     methods: {
-      makeItRain() {
-        document.getElementById("vue").disabled = true
-        var end = Date.now() + (2 * 1000)
-        var colors = ['#FFD700', '#ffffff']
-        function frame() {
-          confetti({
-            particleCount: 2,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: colors,
-            zIndex: 999999
-          })
-          confetti({
-            particleCount: 2,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: colors,
-            zIndex: 999999
-          })
-          if (Date.now() < end) {
-            requestAnimationFrame(frame)
-          }
-          else {
-            document.getElementById("vue").disabled = false
-          }
-        }
-        frame()
-      },
-      connectWebocket(id) {
-        //////////////////////////////////////////////////
-        ///wait for pay action to happen and do a thing////
-        ///////////////////////////////////////////////////
-        self = this
-        if (location.protocol !== 'http:') {
-          localUrl =
-            'wss://' +
-            location.host +
-            '/api/v1/ws/' +
-            id
-        } else {
-          localUrl =
-            'ws://' +
-            location.host +
-            '/api/v1/ws/' +
-            id
-        }
-        this.connection = new WebSocket(localUrl)
-        this.connection.onmessage = function (e) {
-          self.makeItRain()
-        }
-      }
-    },
+    }
   })
 </script>
 {% endblock %}
