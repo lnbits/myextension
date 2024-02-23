@@ -6,11 +6,14 @@ from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from lnbits.tasks import catch_everything_and_restart
 
+
 db = Database("ext_myextension")
 
-myextension_ext: APIRouter = APIRouter(prefix="/myextension", tags=["MyExtension"])
+myextension_ext: APIRouter = APIRouter(
+    prefix="/myextension", tags=["MyExtension"]
+)
 
-temp_static_files = [
+myextension_static_files = [
     {
         "path": "/myextension/static",
         "name": "myextension_static",
