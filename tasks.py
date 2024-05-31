@@ -3,7 +3,7 @@ import asyncio
 from loguru import logger
 
 from lnbits.core.models import Payment
-from lnbits.core.services import create_invoice, websocketUpdater
+from lnbits.core.services import create_invoice, websocket_updater
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
 
@@ -56,4 +56,4 @@ async def on_invoice_paid(payment: Payment) -> None:
         "checking_id": payment.checking_id,
     }
 
-    await websocketUpdater(myextension_id, str(some_payment_data))
+    await websocket_updater(myextension_id, str(some_payment_data))
