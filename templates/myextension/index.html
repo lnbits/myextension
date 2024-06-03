@@ -22,8 +22,8 @@
             <q-btn flat color="grey" @click="exportCSV">Export to CSV</q-btn>
           </div>
         </div>
-        <q-table dense flat :data="temps" row-key="id" :columns="tempsTable.columns"
-          :pagination.sync="tempsTable.pagination">
+        <q-table dense flat :data="myex" row-key="id" :columns="myexTable.columns"
+          :pagination.sync="myexTable.pagination">
           <myextension v-slot:header="props">
             <q-tr :props="props">
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
@@ -175,8 +175,8 @@
       return {
         invoiceAmount: 10,
         qrValue: 'lnurlpay',
-        temps: [],
-        tempsTable: {
+        myex: [],
+        myexTable: {
           columns: [
             { name: 'id', align: 'left', label: 'ID', field: 'id' },
             { name: 'name', align: 'left', label: 'Name', field: 'name' },
@@ -194,15 +194,8 @@
         },
         formDialog: {
           show: false,
-          data: {
-            withdrawpin: 878787,
-            tip_options: [],
-            withdrawbtwn: 10
-          },
-          advanced: {
-            tips: false,
-            otc: false
-          }
+          data: {},
+          advanced: {}
         },
         urlDialog: {
           show: false,
@@ -218,11 +211,7 @@
     methods: {
       closeFormDialog() {
         this.formDialog.show = false
-        this.formDialog.data = {
-          withdrawpin: 878787,
-          tip_options: [],
-          withdrawbtwn: 10
-        }
+        this.formDialog.data = {}
       },
       getMyExtensions: function () {
         var self = this
@@ -230,11 +219,11 @@
         LNbits.api
           .request(
             'GET',
-            '/myextension/api/v1/temps?all_wallets=true',
+            '/myextension/api/v1/myex?all_wallets=true',
             this.g.user.wallets[0].inkey
           )
           .then(function (response) {
-            self.temps = response.data.map(function (obj) {
+            self.myex = response.data.map(function (obj) {
               return mapMyExtension(obj)
             })
           })
@@ -258,7 +247,7 @@
         }
       },
       updateMyExtensionForm(tempId) {
-        const myextension = _.findWhere(this.temps, { id: tempId })
+        const myextension = _.findWhere(this.myex, { id: tempId })
         this.formDialog.data = {
           ...myextension
         }
@@ -272,9 +261,9 @@
       },
       createMyExtension(wallet, data) {
         LNbits.api
-          .request('POST', '/myextension/api/v1/temps', wallet.adminkey, data)
+          .request('POST', '/myextension/api/v1/myex', wallet.adminkey, data)
           .then(response => {
-            this.temps.push(mapMyExtension(response.data))
+            this.myex.push(mapMyExtension(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
@@ -285,15 +274,15 @@
         LNbits.api
           .request(
             'PUT',
-            `/myextension/api/v1/temps/${data.id}`,
+            `/myextension/api/v1/myex/${data.id}`,
             wallet.adminkey,
             data
           )
           .then(response => {
-            this.temps = _.reject(this.temps, obj => {
+            this.myex = _.reject(this.myex, obj => {
               return obj.id == data.id
             })
-            this.temps.push(mapMyExtension(response.data))
+            this.myex.push(mapMyExtension(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
@@ -302,7 +291,7 @@
       },
       deleteMyExtension: function (tempId) {
         var self = this
-        var myextension = _.findWhere(this.temps, { id: tempId })
+        var myextension = _.findWhere(this.myex, { id: tempId })
 
         LNbits.utils
           .confirmDialog('Are you sure you want to delete this MyExtension?')
@@ -310,11 +299,11 @@
             LNbits.api
               .request(
                 'DELETE',
-                '/myextension/api/v1/temps/' + tempId,
+                '/myextension/api/v1/myex/' + tempId,
                 _.findWhere(self.g.user.wallets, { id: myextension.wallet }).adminkey
               )
               .then(function (response) {
-                self.temps = _.reject(self.temps, function (obj) {
+                self.myex = _.reject(self.myex, function (obj) {
                   return obj.id == tempId
                 })
               })
@@ -324,20 +313,15 @@
           })
       },
       exportCSV: function () {
-        LNbits.utils.exportCSV(this.tempsTable.columns, this.temps)
+        LNbits.utils.exportCSV(this.myexTable.columns, this.myex)
       },
       itemsArray(tempId) {
-        const myextension = _.findWhere(this.temps, { id: tempId })
+        const myextension = _.findWhere(this.myex, { id: tempId })
         return [...myextension.itemsMap.values()]
-      },
-      itemFormatPrice(price, id) {
-        const myextension = id.split(':')[0]
-        const currency = _.findWhere(this.temps, { id: myextension }).currency
-        return LNbits.utils.formatCurrency(Number(price).toFixed(2), currency)
       },
       openformDialog(id) {
         const [tempId, itemId] = id.split(':')
-        const myextension = _.findWhere(this.temps, { id: tempId })
+        const myextension = _.findWhere(this.myex, { id: tempId })
         if (itemId) {
           const item = myextension.itemsMap.get(id)
           this.formDialog.data = {
@@ -352,15 +336,10 @@
       },
       closeformDialog() {
         this.formDialog.show = false
-        this.formDialog.data = {
-          title: '',
-          image: '',
-          price: '',
-          disabled: false
-        }
+        this.formDialog.data = {}
       },
       openUrlDialog(id) {
-        this.urlDialog.data = _.findWhere(this.temps, { id })
+        this.urlDialog.data = _.findWhere(this.myex, { id })
         this.qrValue = this.urlDialog.data.lnurlpay
         console.log(this.urlDialog.data.id)
         this.connectWebocket(this.urlDialog.data.id)

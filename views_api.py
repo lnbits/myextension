@@ -37,7 +37,7 @@ from .models import CreateMyExtensionData
 ## Get all the records belonging to the user
 
 
-@myextension_ext.get("/api/v1/temps", status_code=HTTPStatus.OK)
+@myextension_ext.get("/api/v1/myex", status_code=HTTPStatus.OK)
 async def api_myextensions(
     req: Request,
     all_wallets: bool = Query(False),
@@ -55,7 +55,7 @@ async def api_myextensions(
 ## Get a single record
 
 
-@myextension_ext.get("/api/v1/temps/{myextension_id}", status_code=HTTPStatus.OK)
+@myextension_ext.get("/api/v1/myex/{myextension_id}", status_code=HTTPStatus.OK)
 async def api_myextension(
     req: Request, myextension_id: str, WalletTypeInfo=Depends(get_key_type)
 ):
@@ -70,7 +70,7 @@ async def api_myextension(
 ## update a record
 
 
-@myextension_ext.put("/api/v1/temps/{myextension_id}")
+@myextension_ext.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
     req: Request,
     data: CreateMyExtensionData,
@@ -97,7 +97,7 @@ async def api_myextension_update(
 ## Create a new record
 
 
-@myextension_ext.post("/api/v1/temps", status_code=HTTPStatus.CREATED)
+@myextension_ext.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
 async def api_myextension_create(
     req: Request,
     data: CreateMyExtensionData,
@@ -112,7 +112,7 @@ async def api_myextension_create(
 ## Delete a record
 
 
-@myextension_ext.delete("/api/v1/temps/{myextension_id}")
+@myextension_ext.delete("/api/v1/myex/{myextension_id}")
 async def api_myextension_delete(
     myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
@@ -138,7 +138,7 @@ async def api_myextension_delete(
 
 
 @myextension_ext.post(
-    "/api/v1/temps/payment/{myextension_id}", status_code=HTTPStatus.CREATED
+    "/api/v1/myex/payment/{myextension_id}", status_code=HTTPStatus.CREATED
 )
 async def api_tpos_create_invoice(
     myextension_id: str, amount: int = Query(..., ge=1), memo: str = ""
@@ -159,8 +159,6 @@ async def api_tpos_create_invoice(
             memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
             extra={
                 "tag": "myextension",
-                "tipAmount": tipAmount,
-                "tempId": tempId,
                 "amount": amount,
             },
         )

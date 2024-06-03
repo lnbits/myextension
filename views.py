@@ -12,7 +12,7 @@ from lnbits.settings import settings
 from . import myextension_ext, myextension_renderer
 from .crud import get_myextension
 
-temps = Jinja2Templates(directory="temps")
+myex = Jinja2Templates(directory="myex")
 
 
 #######################################
