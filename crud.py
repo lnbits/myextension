@@ -35,7 +35,6 @@ async def create_myextension(
 async def get_myextension(
     myextension_id: str, req: Optional[Request] = None
 ) -> Optional[MyExtension]:
-    logger.debug(myextension_id)
     row = await db.fetchone(
         "SELECT * FROM myextension.maintable WHERE id = ?", (myextension_id,)
     )
@@ -86,7 +85,6 @@ async def update_myextension(
     myextension_id: str, req: Optional[Request] = None, **kwargs
 ) -> MyExtension:
     q = ", ".join([f"{field[0]} = ?" for field in kwargs.items()])
-    logger.debug(kwargs.items())
     await db.execute(
         f"UPDATE myextension.maintable SET {q} WHERE id = ?",
         (*kwargs.values(), myextension_id),

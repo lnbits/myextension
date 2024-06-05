@@ -129,7 +129,6 @@ async def api_lnurl_withdraw_cb(
     pr: Optional[str] = None,
     k1: Optional[str] = None,
 ):
-    logger.debug("cunt")
     assert k1, "k1 is required"
     assert pr, "pr is required"
     myextension = await get_myextension(myextension_id)
@@ -143,9 +142,6 @@ async def api_lnurl_withdraw_cb(
     await update_myextension(
         myextension_id=myextension_id, ticker=myextension.ticker + 1
     )
-    logger.debug(myextension.wallet)
-    logger.debug(pr)
-    logger.debug(int(myextension.lnurlwithdrawamount * 1000))
     await pay_invoice(
         wallet_id=myextension.wallet,
         payment_request=pr,

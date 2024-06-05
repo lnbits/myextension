@@ -5,7 +5,9 @@ from fastapi import APIRouter
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from lnbits.tasks import create_permanent_unique_task
+from loguru import logger
 
+logger.debug("This logged message is from myextension/__init__.py, you can debug in your extension using 'import logger from loguru' and 'logger.debug(<thing-to-log>)'.")
 
 db = Database("ext_myextension")
 

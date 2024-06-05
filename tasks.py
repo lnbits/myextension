@@ -18,7 +18,6 @@ from .crud import get_myextension, update_myextension
 
 
 async def wait_for_paid_invoices():
-    logger.debug(get_current_extension_name())
     invoice_queue = asyncio.Queue()
     register_invoice_listener(invoice_queue, get_current_extension_name())
     while True:
@@ -30,7 +29,6 @@ async def wait_for_paid_invoices():
 
 
 async def on_invoice_paid(payment: Payment) -> None:
-    logger.debug("payment received for myextension extension")
     if payment.extra.get("tag") != "MyExtension":
         return
 
