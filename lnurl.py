@@ -46,7 +46,7 @@ async def api_lnurl_pay(
 
 
 @myextension_ext.get(
-    "/api/v1/lnurl/pay/cb/{myextension_id}",
+    "/api/v1/lnurl/paycb/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_pay_callback",
 )
@@ -119,7 +119,7 @@ async def api_lnurl_withdraw(
 
 
 @myextension_ext.get(
-    "/api/v1/lnurl/withdraw/cb/{myextension_id}",
+    "/api/v1/lnurl/withdrawcb/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw_callback",
 )
@@ -129,10 +129,9 @@ async def api_lnurl_withdraw_cb(
     pr: Optional[str] = None,
     k1: Optional[str] = None,
 ):
-
+    logger.debug("cunt")
     assert k1, "k1 is required"
     assert pr, "pr is required"
-    logger.debug("cunt")
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
