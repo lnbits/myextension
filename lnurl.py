@@ -124,7 +124,6 @@ async def api_lnurl_withdraw(
     name="myextension.api_lnurl_withdraw_callback",
 )
 async def api_lnurl_withdraw_cb(
-    request: Request,
     myextension_id: str,
     pr: Optional[str] = None,
     k1: Optional[str] = None,

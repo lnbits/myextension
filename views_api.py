@@ -1,22 +1,13 @@
 from http import HTTPStatus
-import json
-
-import httpx
 from fastapi import Depends, Query, Request
-from lnurl import decode as decode_lnurl
-from loguru import logger
 from starlette.exceptions import HTTPException
 
 from lnbits.core.crud import get_user
-from lnbits.core.models import Payment
 from lnbits.core.services import create_invoice
-from lnbits.core.views.api import api_payment
 from lnbits.decorators import (
     WalletTypeInfo,
-    check_admin,
     get_key_type,
     require_admin_key,
-    require_invoice_key,
 )
 
 from . import myextension_ext
@@ -140,7 +131,7 @@ async def api_myextension_delete(
 @myextension_ext.post(
     "/api/v1/myex/payment/{myextension_id}", status_code=HTTPStatus.CREATED
 )
-async def api_tpos_create_invoice(
+async def api_myextension_create_invoice(
     myextension_id: str, amount: int = Query(..., ge=1), memo: str = ""
 ) -> dict:
     myextension = await get_myextension(myextension_id)

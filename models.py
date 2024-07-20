@@ -1,12 +1,8 @@
 # Data models for your extension
 
 from sqlite3 import Row
-from typing import Optional, List
+from typing import Optional
 from pydantic import BaseModel
-from fastapi import Request
-
-from lnbits.lnurl import encode as lnurl_encode
-from urllib.parse import urlparse
 
 
 class CreateMyExtensionData(BaseModel):

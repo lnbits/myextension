@@ -4,7 +4,6 @@ from lnbits.helpers import urlsafe_short_hash
 from lnbits.lnurl import encode as lnurl_encode
 from . import db
 from .models import CreateMyExtensionData, MyExtension
-from loguru import logger
 from fastapi import Request
 from lnurl import encode as lnurl_encode
 import shortuuid

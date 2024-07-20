@@ -7,13 +7,13 @@ from lnbits.helpers import template_renderer
 from lnbits.tasks import create_permanent_unique_task
 from loguru import logger
 
-logger.debug("This logged message is from myextension/__init__.py, you can debug in your extension using 'import logger from loguru' and 'logger.debug(<thing-to-log>)'.")
+logger.debug(
+    "This logged message is from myextension/__init__.py, you can debug in your extension using 'import logger from loguru' and 'logger.debug(<thing-to-log>)'."
+)
 
 db = Database("ext_myextension")
 
-myextension_ext: APIRouter = APIRouter(
-    prefix="/myextension", tags=["MyExtension"]
-)
+myextension_ext: APIRouter = APIRouter(prefix="/myextension", tags=["MyExtension"])
 
 myextension_static_files = [
     {
@@ -34,12 +34,14 @@ from .views_api import *
 
 scheduled_tasks: list[asyncio.Task] = []
 
+
 def myextension_stop():
     for task in scheduled_tasks:
         try:
             task.cancel()
         except Exception as ex:
             logger.warning(ex)
+
 
 def myextension_start():
     task = create_permanent_unique_task("ext_myextension", wait_for_paid_invoices)
