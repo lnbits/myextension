@@ -1,17 +1,20 @@
 from http import HTTPStatus
 
-from fastapi import Depends, Request
-from fastapi.templating import Jinja2Templates
+from fastapi import APIRouter, Depends, Request
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
+from lnbits.helpers import template_renderer
 from lnbits.settings import settings
 from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse
 
-from . import myextension_ext, myextension_renderer
 from .crud import get_myextension
 
-myex = Jinja2Templates(directory="myex")
+myextension_generic_router = APIRouter()
+
+
+def myextension_renderer():
+    return template_renderer(["myextension/templates"])
 
 
 #######################################
@@ -22,7 +25,7 @@ myex = Jinja2Templates(directory="myex")
 # Backend admin page
 
 
-@myextension_ext.get("/", response_class=HTMLResponse)
+@myextension_generic_router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return myextension_renderer().TemplateResponse(
         "myextension/index.html", {"request": request, "user": user.dict()}
@@ -32,9 +35,9 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 # Frontend shareable page
 
 
-@myextension_ext.get("/{myextension_id}")
+@myextension_generic_router.get("/{myextension_id}")
 async def myextension(request: Request, myextension_id):
-    myextension = await get_myextension(myextension_id, request)
+    myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
@@ -53,7 +56,7 @@ async def myextension(request: Request, myextension_id):
 # Manifest for public page, customise or remove manifest completely
 
 
-@myextension_ext.get("/manifest/{myextension_id}.webmanifest")
+@myextension_generic_router.get("/manifest/{myextension_id}.webmanifest")
 async def manifest(myextension_id: str):
     myextension = await get_myextension(myextension_id)
     if not myextension:

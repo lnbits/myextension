@@ -30,19 +30,22 @@ async def on_invoice_paid(payment: Payment) -> None:
         return
 
     myextension_id = payment.extra.get("myextensionId")
+    assert myextension_id, "myextensionId not set in invoice"
     myextension = await get_myextension(myextension_id)
+    assert myextension, "MyExtension does not exist"
 
     # update something in the db
     if payment.extra.get("lnurlwithdraw"):
         total = myextension.total - payment.amount
     else:
         total = myextension.total + payment.amount
-    data_to_update = {"total": total}
 
-    await update_myextension(myextension_id=myextension_id, **data_to_update)
+    myextension.total = total
+    await update_myextension(myextension)
 
-    # here we could send some data to a websocket on wss://<your-lnbits>/api/v1/ws/<myextension_id>
-    # and then listen to it on the frontend, which we do with index.html connectWebocket()
+    # here we could send some data to a websocket on
+    # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on
+    # the frontend, which we do with index.html connectWebocket()
 
     some_payment_data = {
         "name": myextension.name,
