@@ -6,11 +6,11 @@ from pydantic import BaseModel
 
 
 class CreateMyExtensionData(BaseModel):
-    wallet: Optional[str]
     name: str
     lnurlpayamount: int
     lnurlwithdrawamount: int
-    total: Optional[int]
+    wallet: Optional[str] = None
+    total: int = 0
 
 
 class MyExtension(BaseModel):

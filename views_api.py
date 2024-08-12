@@ -108,9 +108,9 @@ async def api_myextension_create(
             )
         )
     )
+    data.wallet = data.wallet or key_type.wallet.id
     myext = MyExtension(
         id=myextension_id,
-        wallet=data.wallet or key_type.wallet.id,
         lnurlpay=lnurlpay,
         lnurlwithdraw=lnurlwithdraw,
         **data.dict(),

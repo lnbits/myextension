@@ -12,10 +12,7 @@ table_name = "myextension.maintable"
 async def create_myextension(data: MyExtension) -> MyExtension:
     await db.execute(
         insert_query(table_name, data),
-        (
-            *data.dict().values(),
-            data.id,
-        ),
+        (*data.dict().values(),),
     )
     return data
 
