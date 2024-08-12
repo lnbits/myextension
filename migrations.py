@@ -1,5 +1,6 @@
 # the migration file is where you build your database tables
-# If you create a new release for your extension , remeember the migration file is like a blockchain, never edit only add!
+# If you create a new release for your extension ,
+# remember the migration file is like a blockchain, never edit only add!
 
 
 async def m001_initial(db):
@@ -18,19 +19,5 @@ async def m001_initial(db):
             lnurlwithdraw TEXT,
             lnurlpay TEXT
         );
-    """
-    )
-
-
-# Here we add another field to the database
-
-
-async def m002_addtip_wallet(db):
-    """
-    Add total to templates table
-    """
-    await db.execute(
-        """
-        ALTER TABLE myextension.maintable ADD ticker INTEGER DEFAULT 1;
     """
     )

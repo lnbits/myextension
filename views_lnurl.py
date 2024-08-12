@@ -3,15 +3,14 @@
 # Feel free to delete this file if you don't need it.
 
 from http import HTTPStatus
-from fastapi import Depends, Query, Request
-from . import myextension_ext
-from .crud import get_myextension
+from typing import Optional
+
+import shortuuid
+from fastapi import APIRouter, Query, Request
 from lnbits.core.services import create_invoice, pay_invoice
 from loguru import logger
-from typing import Optional
-from .crud import update_myextension
-from .models import MyExtension
-import shortuuid
+
+from .crud import get_myextension
 
 #################################################
 ########### A very simple LNURLpay ##############
@@ -19,8 +18,10 @@ import shortuuid
 #################################################
 #################################################
 
+myextension_lnurl_router = APIRouter()
 
-@myextension_ext.get(
+
+@myextension_lnurl_router.get(
     "/api/v1/lnurl/pay/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_pay",
@@ -45,7 +46,7 @@ async def api_lnurl_pay(
     }
 
 
-@myextension_ext.get(
+@myextension_lnurl_router.get(
     "/api/v1/lnurl/paycb/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_pay_callback",
@@ -60,7 +61,7 @@ async def api_lnurl_pay_cb(
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
 
-    payment_hash, payment_request = await create_invoice(
+    _, payment_request = await create_invoice(
         wallet_id=myextension.wallet,
         amount=int(amount / 1000),
         memo=myextension.name,
@@ -82,28 +83,24 @@ async def api_lnurl_pay_cb(
 ######## A very simple LNURLwithdraw ############
 # https://github.com/lnurl/luds/blob/luds/03.md #
 #################################################
-## withdraws are unique, removing 'tickerhash' ##
-## here and crud.py will allow muliple pulls ####
+## withdraw is unlimited, look at withdraw ext ##
+## for more advanced withdraw options          ##
 #################################################
 
 
-@myextension_ext.get(
-    "/api/v1/lnurl/withdraw/{myextension_id}/{tickerhash}",
+@myextension_lnurl_router.get(
+    "/api/v1/lnurl/withdraw/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw",
 )
 async def api_lnurl_withdraw(
     request: Request,
     myextension_id: str,
-    tickerhash: str,
 ):
     myextension = await get_myextension(myextension_id)
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
-    k1 = shortuuid.uuid(name=myextension.id + str(myextension.ticker))
-    if k1 != tickerhash:
-        return {"status": "ERROR", "reason": "LNURLw already used"}
-
+    k1 = shortuuid.uuid(name=myextension.id)
     return {
         "tag": "withdrawRequest",
         "callback": str(
@@ -118,7 +115,7 @@ async def api_lnurl_withdraw(
     }
 
 
-@myextension_ext.get(
+@myextension_lnurl_router.get(
     "/api/v1/lnurl/withdrawcb/{myextension_id}",
     status_code=HTTPStatus.OK,
     name="myextension.api_lnurl_withdraw_callback",
@@ -134,13 +131,10 @@ async def api_lnurl_withdraw_cb(
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
 
-    k1Check = shortuuid.uuid(name=myextension.id + str(myextension.ticker))
-    if k1Check != k1:
+    k1_check = shortuuid.uuid(name=myextension.id)
+    if k1_check != k1:
         return {"status": "ERROR", "reason": "Wrong k1 check provided"}
 
-    await update_myextension(
-        myextension_id=myextension_id, ticker=myextension.ticker + 1
-    )
     await pay_invoice(
         wallet_id=myextension.wallet,
         payment_request=pr,

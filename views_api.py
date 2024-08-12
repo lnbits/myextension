@@ -1,24 +1,28 @@
 from http import HTTPStatus
-from fastapi import Depends, Query, Request
-from starlette.exceptions import HTTPException
 
+from fastapi import APIRouter, Depends, Query, Request
 from lnbits.core.crud import get_user
+from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import (
-    WalletTypeInfo,
     get_key_type,
     require_admin_key,
+    require_invoice_key,
 )
+from lnbits.helpers import urlsafe_short_hash
+from lnurl import encode as lnurl_encode
+from starlette.exceptions import HTTPException
 
-from . import myextension_ext
 from .crud import (
     create_myextension,
-    update_myextension,
     delete_myextension,
     get_myextension,
     get_myextensions,
+    update_myextension,
 )
-from .models import CreateMyExtensionData
+from .models import CreateMyExtensionData, MyExtension
+
+myextension_api_router = APIRouter()
 
 
 #######################################
@@ -28,9 +32,8 @@ from .models import CreateMyExtensionData
 ## Get all the records belonging to the user
 
 
-@myextension_ext.get("/api/v1/myex", status_code=HTTPStatus.OK)
+@myextension_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
 async def api_myextensions(
-    req: Request,
     all_wallets: bool = Query(False),
     wallet: WalletTypeInfo = Depends(get_key_type),
 ):
@@ -38,19 +41,19 @@ async def api_myextensions(
     if all_wallets:
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [
-        myextension.dict() for myextension in await get_myextensions(wallet_ids, req)
-    ]
+    return [myextension.dict() for myextension in await get_myextensions(wallet_ids)]
 
 
 ## Get a single record
 
 
-@myextension_ext.get("/api/v1/myex/{myextension_id}", status_code=HTTPStatus.OK)
-async def api_myextension(
-    req: Request, myextension_id: str, WalletTypeInfo=Depends(get_key_type)
-):
-    myextension = await get_myextension(myextension_id, req)
+@myextension_api_router.get(
+    "/api/v1/myex/{myextension_id}",
+    status_code=HTTPStatus.OK,
+    dependencies=[Depends(require_invoice_key)],
+)
+async def api_myextension(myextension_id: str):
+    myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
@@ -61,49 +64,64 @@ async def api_myextension(
 ## update a record
 
 
-@myextension_ext.put("/api/v1/myex/{myextension_id}")
+@myextension_api_router.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
-    req: Request,
     data: CreateMyExtensionData,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
-):
+) -> MyExtension:
     if not myextension_id:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    myextension = await get_myextension(myextension_id, req)
+    myextension = await get_myextension(myextension_id)
     assert myextension, "MyExtension couldn't be retrieved"
 
     if wallet.wallet.id != myextension.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
-    myextension = await update_myextension(
-        myextension_id=myextension_id, **data.dict(), req=req
-    )
-    return myextension.dict()
+
+    for key, value in data.dict().items():
+        setattr(myextension, key, value)
+
+    return await update_myextension(myextension)
 
 
 ## Create a new record
 
 
-@myextension_ext.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
+@myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
 async def api_myextension_create(
-    req: Request,
+    request: Request,
     data: CreateMyExtensionData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
-):
-    myextension = await create_myextension(
-        wallet_id=wallet.wallet.id, data=data, req=req
+    key_type: WalletTypeInfo = Depends(require_admin_key),
+) -> MyExtension:
+    myextension_id = urlsafe_short_hash()
+    lnurlpay = lnurl_encode(
+        str(request.url_for("myextension.api_lnurl_pay", myextension_id=myextension_id))
     )
-    return myextension.dict()
+    lnurlwithdraw = lnurl_encode(
+        str(
+            request.url_for(
+                "myextension.api_lnurl_withdraw", myextension_id=myextension_id
+            )
+        )
+    )
+    data.wallet = data.wallet or key_type.wallet.id
+    myext = MyExtension(
+        id=myextension_id,
+        lnurlpay=lnurlpay,
+        lnurlwithdraw=lnurlwithdraw,
+        **data.dict(),
+    )
+    return await create_myextension(myext)
 
 
 ## Delete a record
 
 
-@myextension_ext.delete("/api/v1/myex/{myextension_id}")
+@myextension_api_router.delete("/api/v1/myex/{myextension_id}")
 async def api_myextension_delete(
     myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
@@ -128,7 +146,7 @@ async def api_myextension_delete(
 ## This endpoint creates a payment
 
 
-@myextension_ext.post(
+@myextension_api_router.post(
     "/api/v1/myex/payment/{myextension_id}", status_code=HTTPStatus.CREATED
 )
 async def api_myextension_create_invoice(
@@ -141,7 +159,8 @@ async def api_myextension_create_invoice(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    # we create a payment and add some tags, so tasks.py can grab the payment once its paid
+    # we create a payment and add some tags,
+    # so tasks.py can grab the payment once its paid
 
     try:
         payment_hash, payment_request = await create_invoice(
@@ -153,7 +172,9 @@ async def api_myextension_create_invoice(
                 "amount": amount,
             },
         )
-    except Exception as e:
-        raise HTTPException(status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(e))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
     return {"payment_hash": payment_hash, "payment_request": payment_request}

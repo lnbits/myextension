@@ -4,7 +4,7 @@ This is a longform description that will be used in the advanced description whe
 
 Adding some bullets is nice covering:
 
-* Functionality
-* Use cases
+- Functionality
+- Use cases
 
 ...and some other text about just how great this etension is.
