@@ -1,12 +1,14 @@
 from typing import List, Optional, Union
 
+import shortuuid
+from fastapi import Request
 from lnbits.helpers import urlsafe_short_hash
 from lnbits.lnurl import encode as lnurl_encode
+
+from lnurl import encode as lnurl_encode
+
 from . import db
 from .models import CreateMyExtensionData, MyExtension
-from fastapi import Request
-from lnurl import encode as lnurl_encode
-import shortuuid
 
 
 async def create_myextension(

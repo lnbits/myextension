@@ -1,7 +1,6 @@
 import asyncio
 
 from fastapi import APIRouter
-
 from lnbits.db import Database
 from lnbits.helpers import template_renderer
 from lnbits.tasks import create_permanent_unique_task

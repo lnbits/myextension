@@ -3,15 +3,15 @@
 # Feel free to delete this file if you don't need it.
 
 from http import HTTPStatus
-from fastapi import Depends, Query, Request
-from . import myextension_ext
-from .crud import get_myextension
+from typing import Optional
+
+import shortuuid
+from fastapi import Query, Request
 from lnbits.core.services import create_invoice, pay_invoice
 from loguru import logger
-from typing import Optional
-from .crud import update_myextension
-from .models import MyExtension
-import shortuuid
+
+from . import myextension_ext
+from .crud import get_myextension, update_myextension
 
 #################################################
 ########### A very simple LNURLpay ##############

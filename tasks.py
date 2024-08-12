@@ -7,7 +7,6 @@ from lnbits.tasks import register_invoice_listener
 
 from .crud import get_myextension, update_myextension
 
-
 #######################################
 ########## RUN YOUR TASKS HERE ########
 #######################################
