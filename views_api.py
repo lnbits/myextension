@@ -3,11 +3,13 @@ from fastapi import Depends, Query, Request
 from starlette.exceptions import HTTPException
 
 from lnbits.core.crud import get_user
+from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import (
     WalletTypeInfo,
     get_key_type,
     require_admin_key,
+    require_invoice_key,
 )
 
 from . import myextension_ext
@@ -18,7 +20,7 @@ from .crud import (
     get_myextension,
     get_myextensions,
 )
-from .models import CreateMyExtensionData
+from .models import CreateMyExtensionData, MyExtension
 
 
 #######################################
@@ -46,10 +48,8 @@ async def api_myextensions(
 ## Get a single record
 
 
-@myextension_ext.get("/api/v1/myex/{myextension_id}", status_code=HTTPStatus.OK)
-async def api_myextension(
-    req: Request, myextension_id: str, WalletTypeInfo=Depends(get_key_type)
-):
+@myextension_ext.get("/api/v1/myex/{myextension_id}", status_code=HTTPStatus.OK, dependencies=[Depends(require_invoice_key)]
+async def api_myextension(req: Request, myextension_id: str):
     myextension = await get_myextension(myextension_id, req)
     if not myextension:
         raise HTTPException(
@@ -67,7 +67,7 @@ async def api_myextension_update(
     data: CreateMyExtensionData,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
-):
+) -> MyExtension:
     if not myextension_id:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
@@ -82,7 +82,7 @@ async def api_myextension_update(
     myextension = await update_myextension(
         myextension_id=myextension_id, **data.dict(), req=req
     )
-    return myextension.dict()
+    return myextension
 
 
 ## Create a new record
