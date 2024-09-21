@@ -24,13 +24,11 @@ from .models import CreateAllowanceData, Allowance
 
 allowance_api_router = APIRouter()
 
-
 #######################################
 ##### ADD YOUR API ENDPOINTS HERE #####
 #######################################
 
 ## Get all the records belonging to the user
-
 
 @allowance_api_router.get("/api/v1/allowance", status_code=HTTPStatus.OK)
 async def api_allowances(
