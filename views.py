@@ -8,13 +8,13 @@ from lnbits.settings import settings
 from starlette.exceptions import HTTPException
 from starlette.responses import HTMLResponse
 
-from .crud import get_myextension
+from .crud import get_allowance
 
-myextension_generic_router = APIRouter()
+allowance_generic_router = APIRouter()
 
 
-def myextension_renderer():
-    return template_renderer(["myextension/templates"])
+def allowance_renderer():
+    return template_renderer(["allowance/templates"])
 
 
 #######################################
@@ -25,30 +25,30 @@ def myextension_renderer():
 # Backend admin page
 
 
-@myextension_generic_router.get("/", response_class=HTMLResponse)
+@allowance_generic_router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
-    return myextension_renderer().TemplateResponse(
-        "myextension/index.html", {"request": request, "user": user.dict()}
+    return allowance_renderer().TemplateResponse(
+        "allowance/index.html", {"request": request, "user": user.dict()}
     )
 
 
 # Frontend shareable page
 
 
-@myextension_generic_router.get("/{myextension_id}")
-async def myextension(request: Request, myextension_id):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+@allowance_generic_router.get("/{allowance_id}")
+async def allowance(request: Request, allowance_id):
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
-    return myextension_renderer().TemplateResponse(
-        "myextension/myextension.html",
+    return allowance_renderer().TemplateResponse(
+        "allowance/allowance.html",
         {
             "request": request,
-            "myextension_id": myextension_id,
-            "lnurlpay": myextension.lnurlpay,
-            "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
+            "allowance_id": allowance_id,
+            "lnurlpay": allowance.lnurlpay,
+            "web_manifest": f"/allowance/manifest/{allowance_id}.webmanifest",
         },
     )
 
@@ -56,17 +56,17 @@ async def myextension(request: Request, myextension_id):
 # Manifest for public page, customise or remove manifest completely
 
 
-@myextension_generic_router.get("/manifest/{myextension_id}.webmanifest")
-async def manifest(myextension_id: str):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+@allowance_generic_router.get("/manifest/{allowance_id}.webmanifest")
+async def manifest(allowance_id: str):
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
 
     return {
         "short_name": settings.lnbits_site_title,
-        "name": myextension.name + " - " + settings.lnbits_site_title,
+        "name": allowance.name + " - " + settings.lnbits_site_title,
         "icons": [
             {
                 "src": (
@@ -78,18 +78,18 @@ async def manifest(myextension_id: str):
                 "sizes": "900x900",
             }
         ],
-        "start_url": "/myextension/" + myextension_id,
+        "start_url": "/allowance/" + allowance_id,
         "background_color": "#1F2234",
         "description": "Minimal extension to build on",
         "display": "standalone",
-        "scope": "/myextension/" + myextension_id,
+        "scope": "/allowance/" + allowance_id,
         "theme_color": "#1F2234",
         "shortcuts": [
             {
-                "name": myextension.name + " - " + settings.lnbits_site_title,
-                "short_name": myextension.name,
-                "description": myextension.name + " - " + settings.lnbits_site_title,
-                "url": "/myextension/" + myextension_id,
+                "name": allowance.name + " - " + settings.lnbits_site_title,
+                "short_name": allowance.name,
+                "description": allowance.name + " - " + settings.lnbits_site_title,
+                "url": "/allowance/" + allowance_id,
             }
         ],
     }

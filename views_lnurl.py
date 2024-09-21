@@ -10,7 +10,7 @@ from fastapi import APIRouter, Query, Request
 from lnbits.core.services import create_invoice, pay_invoice
 from loguru import logger
 
-from .crud import get_myextension
+from .crud import get_allowance
 
 #################################################
 ########### A very simple LNURLpay ##############
@@ -18,64 +18,64 @@ from .crud import get_myextension
 #################################################
 #################################################
 
-myextension_lnurl_router = APIRouter()
+allowance_lnurl_router = APIRouter()
 
 
-@myextension_lnurl_router.get(
-    "/api/v1/lnurl/pay/{myextension_id}",
+@allowance_lnurl_router.get(
+    "/api/v1/lnurl/pay/{allowance_id}",
     status_code=HTTPStatus.OK,
-    name="myextension.api_lnurl_pay",
+    name="allowance.api_lnurl_pay",
 )
 async def api_lnurl_pay(
     request: Request,
-    myextension_id: str,
+    allowance_id: str,
 ):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
-        return {"status": "ERROR", "reason": "No myextension found"}
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
+        return {"status": "ERROR", "reason": "No allowance found"}
     return {
         "callback": str(
             request.url_for(
-                "myextension.api_lnurl_pay_callback", myextension_id=myextension_id
+                "allowance.api_lnurl_pay_callback", allowance_id=allowance_id
             )
         ),
-        "maxSendable": myextension.lnurlpayamount * 1000,
-        "minSendable": myextension.lnurlpayamount * 1000,
-        "metadata": '[["text/plain", "' + myextension.name + '"]]',
+        "maxSendable": allowance.lnurlpayamount * 1000,
+        "minSendable": allowance.lnurlpayamount * 1000,
+        "metadata": '[["text/plain", "' + allowance.name + '"]]',
         "tag": "payRequest",
     }
 
 
-@myextension_lnurl_router.get(
-    "/api/v1/lnurl/paycb/{myextension_id}",
+@allowance_lnurl_router.get(
+    "/api/v1/lnurl/paycb/{allowance_id}",
     status_code=HTTPStatus.OK,
-    name="myextension.api_lnurl_pay_callback",
+    name="allowance.api_lnurl_pay_callback",
 )
 async def api_lnurl_pay_cb(
     request: Request,
-    myextension_id: str,
+    allowance_id: str,
     amount: int = Query(...),
 ):
-    myextension = await get_myextension(myextension_id)
-    logger.debug(myextension)
-    if not myextension:
-        return {"status": "ERROR", "reason": "No myextension found"}
+    allowance = await get_allowance(allowance_id)
+    logger.debug(allowance)
+    if not allowance:
+        return {"status": "ERROR", "reason": "No allowance found"}
 
     _, payment_request = await create_invoice(
-        wallet_id=myextension.wallet,
+        wallet_id=allowance.wallet,
         amount=int(amount / 1000),
-        memo=myextension.name,
-        unhashed_description=f'[["text/plain", "{myextension.name}"]]'.encode(),
+        memo=allowance.name,
+        unhashed_description=f'[["text/plain", "{allowance.name}"]]'.encode(),
         extra={
-            "tag": "MyExtension",
-            "myextensionId": myextension_id,
+            "tag": "Allowance",
+            "allowanceId": allowance_id,
             "extra": request.query_params.get("amount"),
         },
     )
     return {
         "pr": payment_request,
         "routes": [],
-        "successAction": {"tag": "message", "message": f"Paid {myextension.name}"},
+        "successAction": {"tag": "message", "message": f"Paid {allowance.name}"},
     }
 
 
@@ -88,60 +88,60 @@ async def api_lnurl_pay_cb(
 #################################################
 
 
-@myextension_lnurl_router.get(
-    "/api/v1/lnurl/withdraw/{myextension_id}",
+@allowance_lnurl_router.get(
+    "/api/v1/lnurl/withdraw/{allowance_id}",
     status_code=HTTPStatus.OK,
-    name="myextension.api_lnurl_withdraw",
+    name="allowance.api_lnurl_withdraw",
 )
 async def api_lnurl_withdraw(
     request: Request,
-    myextension_id: str,
+    allowance_id: str,
 ):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
-        return {"status": "ERROR", "reason": "No myextension found"}
-    k1 = shortuuid.uuid(name=myextension.id)
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
+        return {"status": "ERROR", "reason": "No allowance found"}
+    k1 = shortuuid.uuid(name=allowance.id)
     return {
         "tag": "withdrawRequest",
         "callback": str(
             request.url_for(
-                "myextension.api_lnurl_withdraw_callback", myextension_id=myextension_id
+                "allowance.api_lnurl_withdraw_callback", allowance_id=allowance_id
             )
         ),
         "k1": k1,
-        "defaultDescription": myextension.name,
-        "maxWithdrawable": myextension.lnurlwithdrawamount * 1000,
-        "minWithdrawable": myextension.lnurlwithdrawamount * 1000,
+        "defaultDescription": allowance.name,
+        "maxWithdrawable": allowance.lnurlwithdrawamount * 1000,
+        "minWithdrawable": allowance.lnurlwithdrawamount * 1000,
     }
 
 
-@myextension_lnurl_router.get(
-    "/api/v1/lnurl/withdrawcb/{myextension_id}",
+@allowance_lnurl_router.get(
+    "/api/v1/lnurl/withdrawcb/{allowance_id}",
     status_code=HTTPStatus.OK,
-    name="myextension.api_lnurl_withdraw_callback",
+    name="allowance.api_lnurl_withdraw_callback",
 )
 async def api_lnurl_withdraw_cb(
-    myextension_id: str,
+    allowance_id: str,
     pr: Optional[str] = None,
     k1: Optional[str] = None,
 ):
     assert k1, "k1 is required"
     assert pr, "pr is required"
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
-        return {"status": "ERROR", "reason": "No myextension found"}
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
+        return {"status": "ERROR", "reason": "No allowance found"}
 
-    k1_check = shortuuid.uuid(name=myextension.id)
+    k1_check = shortuuid.uuid(name=allowance.id)
     if k1_check != k1:
         return {"status": "ERROR", "reason": "Wrong k1 check provided"}
 
     await pay_invoice(
-        wallet_id=myextension.wallet,
+        wallet_id=allowance.wallet,
         payment_request=pr,
-        max_sat=int(myextension.lnurlwithdrawamount * 1000),
+        max_sat=int(allowance.lnurlwithdrawamount * 1000),
         extra={
-            "tag": "MyExtension",
-            "myextensionId": myextension_id,
+            "tag": "Allowance",
+            "allowanceId": allowance_id,
             "lnurlwithdraw": True,
         },
     )

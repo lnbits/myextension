@@ -5,7 +5,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class CreateMyExtensionData(BaseModel):
+class CreateAllowanceData(BaseModel):
     name: str
     lnurlpayamount: int
     lnurlwithdrawamount: int
@@ -13,7 +13,7 @@ class CreateMyExtensionData(BaseModel):
     total: int = 0
 
 
-class MyExtension(BaseModel):
+class Allowance(BaseModel):
     id: str
     wallet: str
     lnurlpayamount: int

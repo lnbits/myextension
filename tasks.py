@@ -5,7 +5,7 @@ from lnbits.core.services import websocket_updater
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
 
-from .crud import get_myextension, update_myextension
+from .crud import get_allowance, update_allowance
 
 #######################################
 ########## RUN YOUR TASKS HERE ########
@@ -26,32 +26,32 @@ async def wait_for_paid_invoices():
 
 
 async def on_invoice_paid(payment: Payment) -> None:
-    if payment.extra.get("tag") != "MyExtension":
+    if payment.extra.get("tag") != "Allowance":
         return
 
-    myextension_id = payment.extra.get("myextensionId")
-    assert myextension_id, "myextensionId not set in invoice"
-    myextension = await get_myextension(myextension_id)
-    assert myextension, "MyExtension does not exist"
+    allowance_id = payment.extra.get("allowanceId")
+    assert allowance_id, "allowanceId not set in invoice"
+    allowance = await get_allowance(allowance_id)
+    assert allowance, "Allowance does not exist"
 
     # update something in the db
     if payment.extra.get("lnurlwithdraw"):
-        total = myextension.total - payment.amount
+        total = allowance.total - payment.amount
     else:
-        total = myextension.total + payment.amount
+        total = allowance.total + payment.amount
 
-    myextension.total = total
-    await update_myextension(myextension)
+    allowance.total = total
+    await update_allowance(allowance)
 
     # here we could send some data to a websocket on
-    # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on
+    # wss://<your-lnbits>/api/v1/ws/<allowance_id> and then listen to it on
     # the frontend, which we do with index.html connectWebocket()
 
     some_payment_data = {
-        "name": myextension.name,
+        "name": allowance.name,
         "amount": payment.amount,
         "fee": payment.fee,
         "checking_id": payment.checking_id,
     }
 
-    await websocket_updater(myextension_id, str(some_payment_data))
+    await websocket_updater(allowance_id, str(some_payment_data))

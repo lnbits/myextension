@@ -14,15 +14,15 @@ from lnurl import encode as lnurl_encode
 from starlette.exceptions import HTTPException
 
 from .crud import (
-    create_myextension,
-    delete_myextension,
-    get_myextension,
-    get_myextensions,
-    update_myextension,
+    create_allowance,
+    delete_allowance,
+    get_allowance,
+    get_allowances,
+    update_allowance,
 )
-from .models import CreateMyExtensionData, MyExtension
+from .models import CreateAllowanceData, Allowance
 
-myextension_api_router = APIRouter()
+allowance_api_router = APIRouter()
 
 
 #######################################
@@ -32,8 +32,8 @@ myextension_api_router = APIRouter()
 ## Get all the records belonging to the user
 
 
-@myextension_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
-async def api_myextensions(
+@allowance_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
+async def api_allowances(
     all_wallets: bool = Query(False),
     wallet: WalletTypeInfo = Depends(get_key_type),
 ):
@@ -41,103 +41,103 @@ async def api_myextensions(
     if all_wallets:
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [myextension.dict() for myextension in await get_myextensions(wallet_ids)]
+    return [allowance.dict() for allowance in await get_allowances(wallet_ids)]
 
 
 ## Get a single record
 
 
-@myextension_api_router.get(
-    "/api/v1/myex/{myextension_id}",
+@allowance_api_router.get(
+    "/api/v1/myex/{allowance_id}",
     status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
-async def api_myextension(myextension_id: str):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+async def api_allowance(allowance_id: str):
+    allowance = await get_allowance(allowance_id)
+    if not allowance:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
-    return myextension.dict()
+    return allowance.dict()
 
 
 ## update a record
 
 
-@myextension_api_router.put("/api/v1/myex/{myextension_id}")
-async def api_myextension_update(
-    data: CreateMyExtensionData,
-    myextension_id: str,
+@allowance_api_router.put("/api/v1/myex/{allowance_id}")
+async def api_allowance_update(
+    data: CreateAllowanceData,
+    allowance_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
-) -> MyExtension:
-    if not myextension_id:
+) -> Allowance:
+    if not allowance_id:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
-    myextension = await get_myextension(myextension_id)
-    assert myextension, "MyExtension couldn't be retrieved"
+    allowance = await get_allowance(allowance_id)
+    assert allowance, "Allowance couldn't be retrieved"
 
-    if wallet.wallet.id != myextension.wallet:
+    if wallet.wallet.id != allowance.wallet:
         raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your Allowance."
         )
 
     for key, value in data.dict().items():
-        setattr(myextension, key, value)
+        setattr(allowance, key, value)
 
-    return await update_myextension(myextension)
+    return await update_allowance(allowance)
 
 
 ## Create a new record
 
 
-@myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
-async def api_myextension_create(
+@allowance_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
+async def api_allowance_create(
     request: Request,
-    data: CreateMyExtensionData,
+    data: CreateAllowanceData,
     key_type: WalletTypeInfo = Depends(require_admin_key),
-) -> MyExtension:
-    myextension_id = urlsafe_short_hash()
+) -> Allowance:
+    allowance_id = urlsafe_short_hash()
     lnurlpay = lnurl_encode(
-        str(request.url_for("myextension.api_lnurl_pay", myextension_id=myextension_id))
+        str(request.url_for("allowance.api_lnurl_pay", allowance_id=allowance_id))
     )
     lnurlwithdraw = lnurl_encode(
         str(
             request.url_for(
-                "myextension.api_lnurl_withdraw", myextension_id=myextension_id
+                "allowance.api_lnurl_withdraw", allowance_id=allowance_id
             )
         )
     )
     data.wallet = data.wallet or key_type.wallet.id
-    myext = MyExtension(
-        id=myextension_id,
+    myext = Allowance(
+        id=allowance_id,
         lnurlpay=lnurlpay,
         lnurlwithdraw=lnurlwithdraw,
         **data.dict(),
     )
-    return await create_myextension(myext)
+    return await create_allowance(myext)
 
 
 ## Delete a record
 
 
-@myextension_api_router.delete("/api/v1/myex/{myextension_id}")
-async def api_myextension_delete(
-    myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
+@allowance_api_router.delete("/api/v1/myex/{allowance_id}")
+async def api_allowance_delete(
+    allowance_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
-    myextension = await get_myextension(myextension_id)
+    allowance = await get_allowance(allowance_id)
 
-    if not myextension:
+    if not allowance:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
 
-    if myextension.wallet != wallet.wallet.id:
+    if allowance.wallet != wallet.wallet.id:
         raise HTTPException(
-            status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your Allowance."
         )
 
-    await delete_myextension(myextension_id)
+    await delete_allowance(allowance_id)
     return "", HTTPStatus.NO_CONTENT
 
 
@@ -146,17 +146,17 @@ async def api_myextension_delete(
 ## This endpoint creates a payment
 
 
-@myextension_api_router.post(
-    "/api/v1/myex/payment/{myextension_id}", status_code=HTTPStatus.CREATED
+@allowance_api_router.post(
+    "/api/v1/myex/payment/{allowance_id}", status_code=HTTPStatus.CREATED
 )
-async def api_myextension_create_invoice(
-    myextension_id: str, amount: int = Query(..., ge=1), memo: str = ""
+async def api_allowance_create_invoice(
+    allowance_id: str, amount: int = Query(..., ge=1), memo: str = ""
 ) -> dict:
-    myextension = await get_myextension(myextension_id)
+    allowance = await get_allowance(allowance_id)
 
-    if not myextension:
+    if not allowance:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
 
     # we create a payment and add some tags,
@@ -164,11 +164,11 @@ async def api_myextension_create_invoice(
 
     try:
         payment_hash, payment_request = await create_invoice(
-            wallet_id=myextension.wallet,
+            wallet_id=allowance.wallet,
             amount=amount,
-            memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
+            memo=f"{memo} to {allowance.name}" if memo else f"{allowance.name}",
             extra={
-                "tag": "myextension",
+                "tag": "allowance",
                 "amount": amount,
             },
         )
