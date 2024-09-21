@@ -1,7 +1,7 @@
 {
   "repos": [
     {
-      "id": "MyExtension",
+      "id": "myextension",
       "organisation": "BenGWeeks",
       "repository": "allowance"
     }
