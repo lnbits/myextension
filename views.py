@@ -80,7 +80,7 @@ async def manifest(allowance_id: str):
         ],
         "start_url": "/allowance/" + allowance_id,
         "background_color": "#1F2234",
-        "description": "Minimal extension to build on",
+        "description": "Allowance extension",
         "display": "standalone",
         "scope": "/allowance/" + allowance_id,
         "theme_color": "#1F2234",
