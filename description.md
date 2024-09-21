@@ -1,10 +1,6 @@
-Allowance can be used as a template for building new extensions, it includes a bunch of functions that can be edited/deleted as you need them.
+Setup automatic recurring payments as an allowance between wallets.
 
-This is a longform description that will be used in the advanced description when users click on the "more" button on the extension cards.
+Example user cases
 
-Adding some bullets is nice covering:
-
-- Functionality
-- Use cases
-
-...and some other text about just how great this etension is.
+- Kids piggy bank (see Lightning Piggy)
+- Corporate rewards and incentives (see Zapp.ie)

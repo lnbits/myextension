@@ -1,7 +1,7 @@
 {
   "name": "Allowance",
   "short_description": "Setup recurring payments between wallets",
-  "tile": "/alklowance/static/image/allowance.png",
+  "tile": "/allowance/static/image/allowance.png",
   "min_lnbits_version": "0.12.5",
   "contributors": [
     {
@@ -24,5 +24,5 @@
   ],
   "description_md": "https://raw.githubusercontent.com/bengweeks/allowance/main/description.md",
   "terms_and_conditions_md": "https://raw.githubusercontent.com/bengweeks/allowance/main/toc.md",
-  "license": "MIT"
+  "license": "DON'T BE A DICK PUBLIC LICENSE"
 }

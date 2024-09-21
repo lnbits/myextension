@@ -12,6 +12,10 @@ Install and enable the "Allowance" extension either through the official LNbits 
 
 > This guide assumes you're using this extension as a base for a new one, and have installed LNbits using https://github.com/lnbits/lnbits/blob/main/docs/guide/installation.md#option-1-recommended-poetry.
 
+To install LNbits see: https://github.com/lnbits/lnbits/blob/main/docs/guide/installation.md#option-1-recommended-poetry.
+
+> LNBits cannot be installed on Windows.
+
 1. `Ctrl c` shut down your LNbits installation.
 2. Download the extension files from https://github.com/bengweek/allowance to a folder outside of `/lnbits`, and initialize the folder with `git`. Alternatively, create a repo, copy the allowance extension files into it, then `git clone` the extension to a location outside of `/lnbits`.
 3. Remove the installed extension from `lnbits/lnbits/extensions`.

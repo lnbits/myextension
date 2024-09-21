@@ -13,7 +13,6 @@ from .crud import get_allowance, update_allowance
 
 # The usual task is to listen to invoices related to this extension
 
-
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
     register_invoice_listener(invoice_queue, get_current_extension_name())
@@ -21,9 +20,7 @@ async def wait_for_paid_invoices():
         payment = await invoice_queue.get()
         await on_invoice_paid(payment)
 
-
 # Do somethhing when an invoice related top this extension is paid
-
 
 async def on_invoice_paid(payment: Payment) -> None:
     if payment.extra.get("tag") != "Allowance":

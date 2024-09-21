@@ -11,13 +11,14 @@ async def m001_initial(db):
         """
         CREATE TABLE allowance.maintable (
             id TEXT PRIMARY KEY,
-            wallet TEXT NOT NULL,
             name TEXT NOT NULL,
-            total INTEGER DEFAULT 0,
-            lnurlpayamount INTEGER DEFAULT 0,
-            lnurlwithdrawamount INTEGER DEFAULT 0,
-            lnurlwithdraw TEXT,
-            lnurlpay TEXT
+            wallet TEXT NOT NULL,
+            to_wallet TEXT NOT NULL,
+            amount INTEGER DEFAULT 0,
+            start_date TIMESTAMP NOT NULL, -- includes day, month, hour, etc.
+            frequency_type TEXT NOT NULL, -- daily, weekly, monthly, yearly
+            next_payment_date DATE NOT NULL,
+            memo TEXT
         );
     """
     )

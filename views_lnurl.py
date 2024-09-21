@@ -1,148 +1,118 @@
-# Maybe your extension needs some LNURL stuff.
-# Here is a very simple example of how to do it.
-# Feel free to delete this file if you don't need it.
-
 from http import HTTPStatus
-from typing import Optional
+import json
 
-import shortuuid
-from fastapi import APIRouter, Query, Request
-from lnbits.core.services import create_invoice, pay_invoice
+import httpx
+from fastapi import Depends, Query, Request
 from loguru import logger
-
-from .crud import get_allowance
-
-#################################################
-########### A very simple LNURLpay ##############
-# https://github.com/lnurl/luds/blob/luds/06.md #
-#################################################
-#################################################
-
-allowance_lnurl_router = APIRouter()
-
-
-@allowance_lnurl_router.get(
-    "/api/v1/lnurl/pay/{allowance_id}",
-    status_code=HTTPStatus.OK,
-    name="allowance.api_lnurl_pay",
+from starlette.exceptions import HTTPException
+from lnbits.core.crud import get_user
+from lnbits.decorators import (
+    WalletTypeInfo,
+    check_admin,
+    get_key_type,
+    require_admin_key,
+    require_invoice_key,
 )
-async def api_lnurl_pay(
-    request: Request,
-    allowance_id: str,
-):
-    allowance = await get_allowance(allowance_id)
-    if not allowance:
-        return {"status": "ERROR", "reason": "No allowance found"}
-    return {
-        "callback": str(
-            request.url_for(
-                "allowance.api_lnurl_pay_callback", allowance_id=allowance_id
-            )
-        ),
-        "maxSendable": allowance.lnurlpayamount * 1000,
-        "minSendable": allowance.lnurlpayamount * 1000,
-        "metadata": '[["text/plain", "' + allowance.name + '"]]',
-        "tag": "payRequest",
-    }
 
-
-@allowance_lnurl_router.get(
-    "/api/v1/lnurl/paycb/{allowance_id}",
-    status_code=HTTPStatus.OK,
-    name="allowance.api_lnurl_pay_callback",
+from . import allowance_ext
+from .crud import (
+    create_allowance,
+    update_allowance,
+    delete_allowance,
+    get_allowance,
+    get_allowances,
 )
-async def api_lnurl_pay_cb(
-    request: Request,
-    allowance_id: str,
-    amount: int = Query(...),
-):
-    allowance = await get_allowance(allowance_id)
-    logger.debug(allowance)
-    if not allowance:
-        return {"status": "ERROR", "reason": "No allowance found"}
+from .models import CreateAllowanceData
 
-    _, payment_request = await create_invoice(
-        wallet_id=allowance.wallet,
-        amount=int(amount / 1000),
-        memo=allowance.name,
-        unhashed_description=f'[["text/plain", "{allowance.name}"]]'.encode(),
-        extra={
-            "tag": "Allowance",
-            "allowanceId": allowance_id,
-            "extra": request.query_params.get("amount"),
-        },
+
+#######################################
+##### ADD YOUR API ENDPOINTS HERE #####
+#######################################
+
+## Get all the records belonging to the user
+
+@allowance_ext.get("/api/v1/allowance", status_code=HTTPStatus.OK)
+async def api_allowances(
+    req: Request,
+    all_wallets: bool = Query(False),
+    wallet: WalletTypeInfo = Depends(get_key_type),
+):
+    wallet_ids = [wallet.wallet.id]
+    if all_wallets:
+        user = await get_user(wallet.wallet.user)
+        wallet_ids = user.wallet_ids if user else []
+    return [
+        eightball.dict() for eightball in await get_allowances(wallet_ids, req)
+    ]
+
+## Get a single record
+
+@allowance_ext.get("/api/v1/allowance/{allowance_id}", status_code=HTTPStatus.OK)
+async def api_allowance(
+    req: Request, allowance_id: str, WalletTypeInfo=Depends(get_key_type)
+):
+    allowance = await get_allowance(allowance_id, req)
+    if not allowance:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
+        )
+    return allowance.dict()
+
+## update a record
+
+@allowance_ext.put("/api/v1/allowance/{allowance_id}")
+async def api_allowance_update(
+    req: Request,
+    data: CreateAllowanceData,
+    allowance_id: str,
+    wallet: WalletTypeInfo = Depends(get_key_type),
+):
+    if not allowance_id:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
+        )
+    allowance = await get_allowance(allowance_id, req)
+    assert allowance, "Allowance couldn't be retrieved"
+
+    if wallet.wallet.id != allowance.wallet:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your allowance."
+        )
+    allowance = await update_allowance(
+        allowance_id=allowance_id, **data.dict(), req=req
     )
-    return {
-        "pr": payment_request,
-        "routes": [],
-        "successAction": {"tag": "message", "message": f"Paid {allowance.name}"},
-    }
+    return allowance.dict()
 
+## Create a new record
 
-#################################################
-######## A very simple LNURLwithdraw ############
-# https://github.com/lnurl/luds/blob/luds/03.md #
-#################################################
-## withdraw is unlimited, look at withdraw ext ##
-## for more advanced withdraw options          ##
-#################################################
-
-
-@allowance_lnurl_router.get(
-    "/api/v1/lnurl/withdraw/{allowance_id}",
-    status_code=HTTPStatus.OK,
-    name="allowance.api_lnurl_withdraw",
-)
-async def api_lnurl_withdraw(
-    request: Request,
-    allowance_id: str,
+@allowance_ext.post("/api/v1/allowance", status_code=HTTPStatus.CREATED)
+async def api_eightball_create(
+    req: Request,
+    data: CreateAllowanceData,
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ):
-    allowance = await get_allowance(allowance_id)
-    if not allowance:
-        return {"status": "ERROR", "reason": "No allowance found"}
-    k1 = shortuuid.uuid(name=allowance.id)
-    return {
-        "tag": "withdrawRequest",
-        "callback": str(
-            request.url_for(
-                "allowance.api_lnurl_withdraw_callback", allowance_id=allowance_id
-            )
-        ),
-        "k1": k1,
-        "defaultDescription": allowance.name,
-        "maxWithdrawable": allowance.lnurlwithdrawamount * 1000,
-        "minWithdrawable": allowance.lnurlwithdrawamount * 1000,
-    }
-
-
-@allowance_lnurl_router.get(
-    "/api/v1/lnurl/withdrawcb/{allowance_id}",
-    status_code=HTTPStatus.OK,
-    name="allowance.api_lnurl_withdraw_callback",
-)
-async def api_lnurl_withdraw_cb(
-    allowance_id: str,
-    pr: Optional[str] = None,
-    k1: Optional[str] = None,
-):
-    assert k1, "k1 is required"
-    assert pr, "pr is required"
-    allowance = await get_allowance(allowance_id)
-    if not allowance:
-        return {"status": "ERROR", "reason": "No allowance found"}
-
-    k1_check = shortuuid.uuid(name=allowance.id)
-    if k1_check != k1:
-        return {"status": "ERROR", "reason": "Wrong k1 check provided"}
-
-    await pay_invoice(
-        wallet_id=allowance.wallet,
-        payment_request=pr,
-        max_sat=int(allowance.lnurlwithdrawamount * 1000),
-        extra={
-            "tag": "Allowance",
-            "allowanceId": allowance_id,
-            "lnurlwithdraw": True,
-        },
+    allowance = await create_allowance(
+        wallet_id=wallet.wallet.id, data=data, req=req
     )
-    return {"status": "OK"}
+    return allowance.dict()
+
+## Delete a record
+
+@allowance_ext.delete("/api/v1/allowance/{allowance_id}")
+async def api_allowance_delete(
+    allowance_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
+):
+    allowance = await get_allowance(allowance_id)
+
+    if not allowance:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
+        )
+
+    if allowance.wallet != wallet.wallet.id:
+        raise HTTPException(
+            status_code=HTTPStatus.FORBIDDEN, detail="Not your allowance."
+        )
+
+    await delete_allowance(allowance_id)
+    return "", HTTPStatus.NO_CONTENT

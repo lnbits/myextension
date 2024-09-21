@@ -32,7 +32,7 @@ allowance_api_router = APIRouter()
 ## Get all the records belonging to the user
 
 
-@allowance_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
+@allowance_api_router.get("/api/v1/allowance", status_code=HTTPStatus.OK)
 async def api_allowances(
     all_wallets: bool = Query(False),
     wallet: WalletTypeInfo = Depends(get_key_type),
@@ -48,7 +48,7 @@ async def api_allowances(
 
 
 @allowance_api_router.get(
-    "/api/v1/myex/{allowance_id}",
+    "/api/v1/allowance/{allowance_id}",
     status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
@@ -64,7 +64,7 @@ async def api_allowance(allowance_id: str):
 ## update a record
 
 
-@allowance_api_router.put("/api/v1/myex/{allowance_id}")
+@allowance_api_router.put("/api/v1/allowance/{allowance_id}")
 async def api_allowance_update(
     data: CreateAllowanceData,
     allowance_id: str,
@@ -91,7 +91,7 @@ async def api_allowance_update(
 ## Create a new record
 
 
-@allowance_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
+@allowance_api_router.post("/api/v1/allowance", status_code=HTTPStatus.CREATED)
 async def api_allowance_create(
     request: Request,
     data: CreateAllowanceData,
@@ -121,7 +121,7 @@ async def api_allowance_create(
 ## Delete a record
 
 
-@allowance_api_router.delete("/api/v1/myex/{allowance_id}")
+@allowance_api_router.delete("/api/v1/allowance/{allowance_id}")
 async def api_allowance_delete(
     allowance_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
@@ -147,7 +147,7 @@ async def api_allowance_delete(
 
 
 @allowance_api_router.post(
-    "/api/v1/myex/payment/{allowance_id}", status_code=HTTPStatus.CREATED
+    "/api/v1/allowance/payment/{allowance_id}", status_code=HTTPStatus.CREATED
 )
 async def api_allowance_create_invoice(
     allowance_id: str, amount: int = Query(..., ge=1), memo: str = ""

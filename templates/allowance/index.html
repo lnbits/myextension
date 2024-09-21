@@ -27,7 +27,7 @@
         <q-table
           dense
           flat
-          :data="myex"
+          :data="allowance"
           row-key="id"
           :columns="myexTable.columns"
           :pagination.sync="myexTable.pagination"
@@ -258,7 +258,7 @@
       return {
         invoiceAmount: 10,
         qrValue: 'lnurlpay',
-        myex: [],
+        allowance: [],
         myexTable: {
           columns: [
             {name: 'id', align: 'left', label: 'ID', field: 'id'},
@@ -307,11 +307,11 @@
         LNbits.api
           .request(
             'GET',
-            '/allowance/api/v1/myex?all_wallets=true',
+            '/allowance/api/v1/allowance?all_wallets=true',
             this.g.user.wallets[0].inkey
           )
           .then(function (response) {
-            self.myex = response.data.map(function (obj) {
+            self.allowance = response.data.map(function (obj) {
               return mapAllowance(obj)
             })
           })
@@ -335,7 +335,7 @@
         }
       },
       updateAllowanceForm(tempId) {
-        const allowance = _.findWhere(this.myex, {id: tempId})
+        const allowance = _.findWhere(this.allowance, {id: tempId})
         this.formDialog.data = {
           ...allowance
         }
@@ -349,9 +349,9 @@
       },
       createAllowance(wallet, data) {
         LNbits.api
-          .request('POST', '/allowance/api/v1/myex', wallet.adminkey, data)
+          .request('POST', '/allowance/api/v1/allowance', wallet.adminkey, data)
           .then(response => {
-            this.myex.push(mapAllowance(response.data))
+            this.allowance.push(mapAllowance(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
@@ -362,15 +362,15 @@
         LNbits.api
           .request(
             'PUT',
-            `/allowance/api/v1/myex/${data.id}`,
+            `/allowance/api/v1/allowance/${data.id}`,
             wallet.adminkey,
             data
           )
           .then(response => {
-            this.myex = _.reject(this.myex, obj => {
+            this.allowance = _.reject(this.allowance, obj => {
               return obj.id == data.id
             })
-            this.myex.push(mapAllowance(response.data))
+            this.allowance.push(mapAllowance(response.data))
             this.closeFormDialog()
           })
           .catch(error => {
@@ -379,7 +379,7 @@
       },
       deleteAllowance: function (tempId) {
         var self = this
-        var allowance = _.findWhere(this.myex, {id: tempId})
+        var allowance = _.findWhere(this.allowance, {id: tempId})
 
         LNbits.utils
           .confirmDialog('Are you sure you want to delete this Allowance?')
@@ -387,12 +387,12 @@
             LNbits.api
               .request(
                 'DELETE',
-                '/allowance/api/v1/myex/' + tempId,
+                '/allowance/api/v1/allowance/' + tempId,
                 _.findWhere(self.g.user.wallets, {id: allowance.wallet})
                   .adminkey
               )
               .then(function (response) {
-                self.myex = _.reject(self.myex, function (obj) {
+                self.allowance = _.reject(self.allowance, function (obj) {
                   return obj.id == tempId
                 })
               })
@@ -402,15 +402,15 @@
           })
       },
       exportCSV: function () {
-        LNbits.utils.exportCSV(this.myexTable.columns, this.myex)
+        LNbits.utils.exportCSV(this.myexTable.columns, this.allowance)
       },
       itemsArray(tempId) {
-        const allowance = _.findWhere(this.myex, {id: tempId})
+        const allowance = _.findWhere(this.allowance, {id: tempId})
         return [...allowance.itemsMap.values()]
       },
       openformDialog(id) {
         const [tempId, itemId] = id.split(':')
-        const allowance = _.findWhere(this.myex, {id: tempId})
+        const allowance = _.findWhere(this.allowance, {id: tempId})
         if (itemId) {
           const item = allowance.itemsMap.get(id)
           this.formDialog.data = {
@@ -428,7 +428,7 @@
         this.formDialog.data = {}
       },
       openUrlDialog(id) {
-        this.urlDialog.data = _.findWhere(this.myex, {id})
+        this.urlDialog.data = _.findWhere(this.allowance, {id})
         this.qrValue = this.urlDialog.data.lnurlpay
         console.log(this.urlDialog.data.id)
         this.connectWebocket(this.urlDialog.data.id)
