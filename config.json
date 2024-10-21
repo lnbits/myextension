@@ -2,7 +2,7 @@
   "name": "MyExtension",
   "short_description": "Minimal extension to build on",
   "tile": "/myextension/static/image/myextension.png",
-  "min_lnbits_version": "0.12.5",
+  "min_lnbits_version": "1.0.0",
   "contributors": [
     {
       "name": "Alan Bits",

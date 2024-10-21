@@ -5,7 +5,6 @@ from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import (
-    get_key_type,
     require_admin_key,
     require_invoice_key,
 )
@@ -32,16 +31,16 @@ myextension_api_router = APIRouter()
 ## Get all the records belonging to the user
 
 
-@myextension_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
+@myextension_api_router.get("/api/v1/myex")
 async def api_myextensions(
     all_wallets: bool = Query(False),
-    wallet: WalletTypeInfo = Depends(get_key_type),
-):
-    wallet_ids = [wallet.wallet.id]
+    key_info: WalletTypeInfo = Depends(require_invoice_key),
+) -> list[MyExtension]:
+    wallet_ids = [key_info.wallet.id]
     if all_wallets:
-        user = await get_user(wallet.wallet.user)
+        user = await get_user(key_info.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [myextension.dict() for myextension in await get_myextensions(wallet_ids)]
+    return await get_myextensions(wallet_ids)
 
 
 ## Get a single record
@@ -49,16 +48,15 @@ async def api_myextensions(
 
 @myextension_api_router.get(
     "/api/v1/myex/{myextension_id}",
-    status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
-async def api_myextension(myextension_id: str):
+async def api_myextension(myextension_id: str) -> MyExtension:
     myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    return myextension.dict()
+    return myextension
 
 
 ## update a record
@@ -68,16 +66,15 @@ async def api_myextension(myextension_id: str):
 async def api_myextension_update(
     data: CreateMyExtensionData,
     myextension_id: str,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    key_info: WalletTypeInfo = Depends(require_invoice_key),
 ) -> MyExtension:
-    if not myextension_id:
+    myextension = await get_myextension(myextension_id)
+    if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    myextension = await get_myextension(myextension_id)
-    assert myextension, "MyExtension couldn't be retrieved"
 
-    if wallet.wallet.id != myextension.wallet:
+    if key_info.wallet.id != myextension.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
@@ -123,7 +120,7 @@ async def api_myextension_create(
 
 @myextension_api_router.delete("/api/v1/myex/{myextension_id}")
 async def api_myextension_delete(
-    myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
+    myextension_id: str, key_info: WalletTypeInfo = Depends(require_admin_key)
 ):
     myextension = await get_myextension(myextension_id)
 
@@ -132,13 +129,12 @@ async def api_myextension_delete(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if myextension.wallet != wallet.wallet.id:
+    if myextension.wallet != key_info.wallet.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
 
     await delete_myextension(myextension_id)
-    return "", HTTPStatus.NO_CONTENT
 
 
 # ANY OTHER ENDPOINTS YOU NEED
@@ -162,19 +158,14 @@ async def api_myextension_create_invoice(
     # we create a payment and add some tags,
     # so tasks.py can grab the payment once its paid
 
-    try:
-        payment_hash, payment_request = await create_invoice(
-            wallet_id=myextension.wallet,
-            amount=amount,
-            memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
-            extra={
-                "tag": "myextension",
-                "amount": amount,
-            },
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
-        ) from exc
+    payment = await create_invoice(
+        wallet_id=myextension.wallet,
+        amount=amount,
+        memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
+        extra={
+            "tag": "myextension",
+            "amount": amount,
+        },
+    )
 
-    return {"payment_hash": payment_hash, "payment_request": payment_request}
+    return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}

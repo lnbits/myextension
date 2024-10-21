@@ -21,3 +21,15 @@ async def m001_initial(db):
         );
     """
     )
+
+
+async def m002_add_timestamp(db):
+    """
+    Add timestamp to templates table.
+    """
+    await db.execute(
+        f"""
+        ALTER TABLE myextension.maintable
+        ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now};
+    """
+    )
