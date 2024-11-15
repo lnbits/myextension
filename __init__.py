@@ -1,6 +1,7 @@
 import asyncio
 
 from fastapi import APIRouter
+from lnbits.tasks import create_permanent_unique_task
 from loguru import logger
 
 from .crud import db
@@ -39,8 +40,6 @@ def myextension_stop():
 
 
 def myextension_start():
-    from lnbits.tasks import create_permanent_unique_task
-
     task = create_permanent_unique_task("ext_myextension", wait_for_paid_invoices)
     scheduled_tasks.append(task)
 

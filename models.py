@@ -2,6 +2,8 @@
 
 from typing import Optional
 
+from fastapi import Request
+from lnurl.core import encode as lnurl_encode
 from pydantic import BaseModel
 
 
@@ -20,5 +22,19 @@ class MyExtension(BaseModel):
     name: str
     lnurlwithdrawamount: int
     total: int
-    lnurlpay: Optional[str]
-    lnurlwithdraw: Optional[str]
+
+    def lnurlpay(self, req: Request) -> str:
+        url = req.url_for("myextension.api_lnurl_pay", myextension_id=self.id)
+        url_str = str(url)
+        if url.netloc.endswith(".onion"):
+            url_str = url_str.replace("https://", "http://")
+
+        return lnurl_encode(url_str)
+
+    def lnurlwithdraw(self, req: Request) -> str:
+        url = req.url_for("myextension.api_lnurl_withdraw", myextension_id=self.id)
+        url_str = str(url)
+        if url.netloc.endswith(".onion"):
+            url_str = url_str.replace("https://", "http://")
+
+        return lnurl_encode(url_str)

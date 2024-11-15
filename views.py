@@ -28,7 +28,7 @@ def myextension_renderer():
 @myextension_generic_router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return myextension_renderer().TemplateResponse(
-        "myextension/index.html", {"request": request, "user": user.dict()}
+        "myextension/index.html", {"request": request, "user": user.json()}
     )
 
 
@@ -47,7 +47,7 @@ async def myextension(request: Request, myextension_id):
         {
             "request": request,
             "myextension_id": myextension_id,
-            "lnurlpay": myextension.lnurlpay,
+            "lnurlpay": myextension.lnurlpay(request),
             "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
         },
     )

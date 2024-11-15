@@ -61,7 +61,7 @@ async def api_lnurl_pay_cb(
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
 
-    _, payment_request = await create_invoice(
+    payment = await create_invoice(
         wallet_id=myextension.wallet,
         amount=int(amount / 1000),
         memo=myextension.name,
@@ -73,7 +73,7 @@ async def api_lnurl_pay_cb(
         },
     )
     return {
-        "pr": payment_request,
+        "pr": payment.bolt11,
         "routes": [],
         "successAction": {"tag": "message", "message": f"Paid {myextension.name}"},
     }

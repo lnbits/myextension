@@ -15,9 +15,7 @@ async def m001_initial(db):
             name TEXT NOT NULL,
             total INTEGER DEFAULT 0,
             lnurlpayamount INTEGER DEFAULT 0,
-            lnurlwithdrawamount INTEGER DEFAULT 0,
-            lnurlwithdraw TEXT,
-            lnurlpay TEXT
+            lnurlwithdrawamount INTEGER DEFAULT 0
         );
     """
     )

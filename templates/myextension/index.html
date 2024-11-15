@@ -27,10 +27,10 @@
         <q-table
           dense
           flat
-          :data="myex"
+          :rows="myex"
           row-key="id"
           :columns="myexTable.columns"
-          :pagination.sync="myexTable.pagination"
+          v-model:pagination="myexTable.pagination"
         >
           <myextension v-slot:header="props">
             <q-tr :props="props">
@@ -250,7 +250,7 @@
     obj.myextension = ['/myextension/', obj.id].join('')
     return obj
   }
-  new Vue({
+  window.app = Vue.createApp({
     el: '#vue',
     mixins: [windowMixin],
     delimiters: ['${', '}'],

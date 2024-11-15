@@ -9,8 +9,6 @@ from lnbits.decorators import (
     require_admin_key,
     require_invoice_key,
 )
-from lnbits.helpers import urlsafe_short_hash
-from lnurl import encode as lnurl_encode
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -29,11 +27,15 @@ myextension_api_router = APIRouter()
 ##### ADD YOUR API ENDPOINTS HERE #####
 #######################################
 
+# Note: we add the lnurl params to returns so the links
+# are generated in the MyExtension model in models.py
+
 ## Get all the records belonging to the user
 
 
 @myextension_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
 async def api_myextensions(
+    req: Request,
     all_wallets: bool = Query(False),
     wallet: WalletTypeInfo = Depends(get_key_type),
 ):
@@ -41,7 +43,14 @@ async def api_myextensions(
     if all_wallets:
         user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [myextension.dict() for myextension in await get_myextensions(wallet_ids)]
+    return [
+        {
+            **myextension.dict(),
+            "lnurlpay": myextension.lnurlpay(req),
+            "lnurlwithdraw": myextension.lnurlwithdraw(req),
+        }
+        for myextension in await get_myextensions(wallet_ids)
+    ]
 
 
 ## Get a single record
@@ -52,13 +61,17 @@ async def api_myextensions(
     status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
-async def api_myextension(myextension_id: str):
+async def api_myextension(myextension_id: str, req: Request):
     myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    return myextension.dict()
+    return {
+        **myextension.dict(),
+        "lnurlpay": myextension.lnurlpay(req),
+        "lnurlwithdraw": myextension.lnurlwithdraw(req),
+    }
 
 
 ## update a record
@@ -67,13 +80,11 @@ async def api_myextension(myextension_id: str):
 @myextension_api_router.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
     data: CreateMyExtensionData,
+    req: Request,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(get_key_type),
 ) -> MyExtension:
-    if not myextension_id:
-        raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
-        )
+
     myextension = await get_myextension(myextension_id)
     assert myextension, "MyExtension couldn't be retrieved"
 
@@ -85,7 +96,12 @@ async def api_myextension_update(
     for key, value in data.dict().items():
         setattr(myextension, key, value)
 
-    return await update_myextension(myextension)
+    myextension = await update_myextension(data)
+    return {
+        **myextension.dict(),
+        "lnurlpay": myextension.lnurlpay(req),
+        "lnurlwithdraw": myextension.lnurlwithdraw(req),
+    }
 
 
 ## Create a new record
@@ -93,29 +109,17 @@ async def api_myextension_update(
 
 @myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
 async def api_myextension_create(
-    request: Request,
     data: CreateMyExtensionData,
+    req: Request,
     key_type: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-    myextension_id = urlsafe_short_hash()
-    lnurlpay = lnurl_encode(
-        str(request.url_for("myextension.api_lnurl_pay", myextension_id=myextension_id))
-    )
-    lnurlwithdraw = lnurl_encode(
-        str(
-            request.url_for(
-                "myextension.api_lnurl_withdraw", myextension_id=myextension_id
-            )
-        )
-    )
     data.wallet = data.wallet or key_type.wallet.id
-    myext = MyExtension(
-        id=myextension_id,
-        lnurlpay=lnurlpay,
-        lnurlwithdraw=lnurlwithdraw,
-        **data.dict(),
-    )
-    return await create_myextension(myext)
+    myextension = create_myextension(data)
+    return {
+        **myextension.dict(),
+        "lnurlpay": myextension.lnurlpay(req),
+        "lnurlwithdraw": myextension.lnurlwithdraw(req),
+    }
 
 
 ## Delete a record
@@ -163,7 +167,7 @@ async def api_myextension_create_invoice(
     # so tasks.py can grab the payment once its paid
 
     try:
-        payment_hash, payment_request = await create_invoice(
+        payment = await create_invoice(
             wallet_id=myextension.wallet,
             amount=amount,
             memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
@@ -177,4 +181,4 @@ async def api_myextension_create_invoice(
             status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
         ) from exc
 
-    return {"payment_hash": payment_hash, "payment_request": payment_request}
+    return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}
