@@ -4,11 +4,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
-from lnbits.decorators import (
-    get_key_type,
-    require_admin_key,
-    require_invoice_key,
-)
+from lnbits.decorators import require_admin_key, require_invoice_key
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -37,7 +33,7 @@ myextension_api_router = APIRouter()
 async def api_myextensions(
     req: Request,
     all_wallets: bool = Query(False),
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_invoice_key),
 ):
     wallet_ids = [wallet.wallet.id]
     if all_wallets:
@@ -82,7 +78,7 @@ async def api_myextension_update(
     data: CreateMyExtensionData,
     req: Request,
     myextension_id: str,
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
 
     myextension = await get_myextension(myextension_id)
