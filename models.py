@@ -20,8 +20,8 @@ class MyExtension(BaseModel):
     lnurlpay: str = ""
     lnurlwithdraw: str = ""
 
+
 class CreatePayment(BaseModel):
     myextension_id: str
     amount: int
     memo: str
-

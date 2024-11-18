@@ -44,7 +44,6 @@ async def on_invoice_paid(payment: Payment) -> None:
 
     # here we could send some data to a websocket on
     # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on
-    # the frontend, which we do with index.html connectWebocket()
 
     some_payment_data = {
         "name": myextension.name,

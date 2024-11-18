@@ -2,7 +2,7 @@
 
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
@@ -18,7 +18,7 @@ from .crud import (
     update_myextension,
 )
 from .helpers import lnurler
-from .models import CreateMyExtensionData, MyExtension, CreatePayment
+from .models import CreateMyExtensionData, CreatePayment, MyExtension
 
 myextension_api_router = APIRouter()
 
@@ -66,6 +66,7 @@ async def api_myextension(myextension_id: str, req: Request) -> MyExtension:
     myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
 
     return myex
+
 
 ## Create a new record
 
@@ -148,12 +149,8 @@ async def api_myextension_delete(
 ## This endpoint creates a payment
 
 
-@myextension_api_router.post(
-    "/api/v1/myex/payment", status_code=HTTPStatus.CREATED
-)
-async def api_myextension_create_invoice(
-    data: CreatePayment
-) -> dict:
+@myextension_api_router.post("/api/v1/myex/payment", status_code=HTTPStatus.CREATED)
+async def api_myextension_create_invoice(data: CreatePayment) -> dict:
     myextension = await get_myextension(data.myextension_id)
 
     if not myextension:
@@ -167,7 +164,9 @@ async def api_myextension_create_invoice(
     payment = await create_invoice(
         wallet_id=myextension.wallet,
         amount=data.amount,
-        memo=f"{data.memo} to {myextension.name}" if data.memo else f"{myextension.name}",
+        memo=(
+            f"{data.memo} to {myextension.name}" if data.memo else f"{myextension.name}"
+        ),
         extra={
             "tag": "myextension",
             "amount": data.amount,

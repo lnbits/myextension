@@ -63,12 +63,6 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(err)
         })
     },
-    async openUrlDialog(tempid) {
-      this.urlDialog.data = _.findWhere(this.myex, {id: tempid})
-      this.qrValue = this.urlDialog.data.lnurlpay
-      await this.connectWebocket(this.urlDialog.data.id)
-      this.urlDialog.show = true
-    },
     async sendMyExtensionData() {
       const data = {
         name: this.formDialog.data.name,
@@ -172,11 +166,25 @@ window.app = Vue.createApp({
       this.formDialog.data.currency = myextension.currency
       this.formDialog.show = true
     },
+    async openUrlDialog(tempid) {
+      this.urlDialog.data = _.findWhere(this.myex, {id: tempid})
+      this.qrValue = this.urlDialog.data.lnurlpay
+
+      // Connecting to our websocket fired in tasks.py
+      this.connectWebocket(this.urlDialog.data.id)
+
+      // We can also use this Lnbits core websocket function for getting a payment reaction
+      const wallet = _.findWhere(this.g.user.wallets, {
+        id: this.urlDialog.data.wallet
+      })
+      eventReactionWebocket(wallet.inkey)
+
+      this.urlDialog.show = true
+    },
     async closeformDialog() {
       this.formDialog.show = false
       this.formDialog.data = {}
     },
-
     async createInvoice(tempid) {
       ///////////////////////////////////////////////////
       ///Simple call to the api to create an invoice/////
@@ -190,44 +198,15 @@ window.app = Vue.createApp({
       }
       await LNbits.api
         .request('POST', `/myextension/api/v1/myex/payment`, wallet.inkey, data)
-        .then(async response => {
+        .then(response => {
           this.qrValue = response.data.payment_request
-          await this.connectWebocket(wallet.id)
+          this.connectWebocket(wallet.inkey)
         })
         .catch(error => {
           LNbits.utils.notifyApiError(error)
         })
     },
-    async makeItRain() {
-      document.getElementById('vue').disabled = true
-      var end = Date.now() + 2 * 1000
-      var colors = ['#FFD700', '#ffffff']
-      async function frame() {
-        confetti({
-          particleCount: 2,
-          angle: 60,
-          spread: 55,
-          origin: {x: 0},
-          colors: colors,
-          zIndex: 999999
-        })
-        confetti({
-          particleCount: 2,
-          angle: 120,
-          spread: 55,
-          origin: {x: 1},
-          colors: colors,
-          zIndex: 999999
-        })
-        if (Date.now() < end) {
-          requestAnimationFrame(frame)
-        } else {
-          document.getElementById('vue').disabled = false
-        }
-      }
-      await frame()
-    },
-    async connectWebocket(wallet_id) {
+    connectWebocket(myextension_id) {
       //////////////////////////////////////////////////
       ///wait for pay action to happen and do a thing////
       ///////////////////////////////////////////////////
@@ -238,7 +217,7 @@ window.app = Vue.createApp({
           ':' +
           location.port +
           '/api/v1/ws/' +
-          wallet_id
+          myextension_id
       } else {
         localUrl =
           'ws://' +
@@ -246,11 +225,11 @@ window.app = Vue.createApp({
           ':' +
           location.port +
           '/api/v1/ws/' +
-          wallet_id
+          myextension_id
       }
       this.connection = new WebSocket(localUrl)
-      this.connection.onmessage = async function (e) {
-        await this.makeItRain()
+      this.connection.onmessage = () => {
+        this.urlDialog.show = false
       }
     }
   },
