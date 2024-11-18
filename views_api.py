@@ -110,7 +110,7 @@ async def api_myextension_create(
     key_type: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
     data.wallet = data.wallet or key_type.wallet.id
-    myextension = create_myextension(data)
+    myextension = await create_myextension(data)
     return {
         **myextension.dict(),
         "lnurlpay": myextension.lnurlpay(req),
