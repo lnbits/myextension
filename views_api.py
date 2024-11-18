@@ -18,7 +18,7 @@ from .crud import (
     update_myextension,
 )
 from .helpers import lnurler
-from .models import CreateMyExtensionData, MyExtension
+from .models import CreateMyExtensionData, MyExtension, CreatePayment
 
 myextension_api_router = APIRouter()
 
@@ -67,6 +67,25 @@ async def api_myextension(myextension_id: str, req: Request) -> MyExtension:
 
     return myex
 
+## Create a new record
+
+
+@myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
+async def api_myextension_create(
+    req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
+    data: CreateMyExtensionData,
+    wallet: WalletTypeInfo = Depends(require_admin_key),
+) -> MyExtension:
+    myex = MyExtension(**data.dict(), wallet=wallet.wallet.id, id=urlsafe_short_hash())
+    myex = await create_myextension(myex)
+
+    # Populate lnurlpay and lnurlwithdraw.
+    # Withoutthe lnurl stuff this wouldnt be needed.
+    myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
+    myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
+
+    return myex
+
 
 ## update a record
 
@@ -102,26 +121,6 @@ async def api_myextension_update(
     return myex
 
 
-## Create a new record
-
-
-@myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
-async def api_myextension_create(
-    req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
-    data: CreateMyExtensionData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
-) -> MyExtension:
-    myex = MyExtension(**data.dict(), wallet=wallet.wallet.id, id=urlsafe_short_hash())
-    myex = await create_myextension(myex)
-
-    # Populate lnurlpay and lnurlwithdraw.
-    # Withoutthe lnurl stuff this wouldnt be needed.
-    myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
-    myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
-
-    return myex
-
-
 ## Delete a record
 
 
@@ -150,12 +149,12 @@ async def api_myextension_delete(
 
 
 @myextension_api_router.post(
-    "/api/v1/myex/payment/{myextension_id}", status_code=HTTPStatus.CREATED
+    "/api/v1/myex/payment", status_code=HTTPStatus.CREATED
 )
 async def api_myextension_create_invoice(
-    myextension_id: str, amount: int = Query(..., ge=1), memo: str = ""
+    data: CreatePayment
 ) -> dict:
-    myextension = await get_myextension(myextension_id)
+    myextension = await get_myextension(data.myextension_id)
 
     if not myextension:
         raise HTTPException(
@@ -167,11 +166,11 @@ async def api_myextension_create_invoice(
 
     payment = await create_invoice(
         wallet_id=myextension.wallet,
-        amount=amount,
-        memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
+        amount=data.amount,
+        memo=f"{data.memo} to {myextension.name}" if data.memo else f"{myextension.name}",
         extra={
             "tag": "myextension",
-            "amount": amount,
+            "amount": data.amount,
         },
     )
 

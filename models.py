@@ -17,5 +17,11 @@ class MyExtension(BaseModel):
     lnurlwithdrawamount: int
     wallet: str
     total: int
-    lnurlpay: str
-    lnurlwithdraw: str
+    lnurlpay: str = ""
+    lnurlwithdraw: str = ""
+
+class CreatePayment(BaseModel):
+    myextension_id: str
+    amount: int
+    memo: str
+

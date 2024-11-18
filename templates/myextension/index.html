@@ -67,7 +67,7 @@
                   icon="launch"
                   :color="($q.dark.isActive) ? 'grey-7' : 'grey-5'"
                   type="a"
-                  :href="props.row.myextension"
+                  :href="props.row.id"
                   target="_blank"
                   ><q-tooltip>Open public page</q-tooltip></q-btn
                 ></q-td
@@ -222,7 +222,7 @@
             <template v-slot:append>
               <q-btn
                 round
-                @click="createInvoice(urlDialog.data.wallet, urlDialog.data.id)"
+                @click="createInvoice(urlDialog.data.id)"
                 color="primary"
                 flat
                 icon="add_circle"
