@@ -2,19 +2,18 @@
 //////////an object we can update with data////////
 ///////////////////////////////////////////////////
 const mapMyExtension = obj => {
-  obj.date = Quasar.date.formatDate(
-    new Date(obj.created_at),
+  obj.date = Quasar.utils.date.formatDate(
+    new Date(obj.time * 1000),
     'YYYY-MM-DD HH:mm'
   )
   obj.myextension = ['/myextension/', obj.id].join('')
   return obj
 }
-
 window.app = Vue.createApp({
   el: '#vue',
   mixins: [windowMixin],
   delimiters: ['${', '}'],
-  data() {
+  data: function () {
     return {
       invoiceAmount: 10,
       qrValue: 'lnurlpay',
@@ -61,15 +60,17 @@ window.app = Vue.createApp({
       this.formDialog.show = false
       this.formDialog.data = {}
     },
-    getMyExtensions() {
+    getMyExtensions: function () {
+      var self = this
+
       LNbits.api
         .request(
           'GET',
           '/myextension/api/v1/myex?all_wallets=true',
           this.g.user.wallets[0].inkey
         )
-        .then(response => {
-          this.myex = response.data.map(obj => {
+        .then(function (response) {
+          self.myex = response.data.map(function (obj) {
             return mapMyExtension(obj)
           })
         })
@@ -135,28 +136,31 @@ window.app = Vue.createApp({
           LNbits.utils.notifyApiError(error)
         })
     },
-    deleteMyExtension(tempId) {
-      const myextension = _.findWhere(this.myex, {id: tempId})
+    deleteMyExtension: function (tempId) {
+      var self = this
+      var myextension = _.findWhere(this.myex, {id: tempId})
 
       LNbits.utils
         .confirmDialog('Are you sure you want to delete this MyExtension?')
-        .onOk(() => {
+        .onOk(function () {
           LNbits.api
             .request(
               'DELETE',
               '/myextension/api/v1/myex/' + tempId,
-              _.findWhere(this.g.user.wallets, {id: myextension.wallet})
+              _.findWhere(self.g.user.wallets, {id: myextension.wallet})
                 .adminkey
             )
-            .then(response => {
-              this.myex = _.reject(this.myex, obj => {
+            .then(function (response) {
+              self.myex = _.reject(self.myex, function (obj) {
                 return obj.id == tempId
               })
             })
-            .catch(LNbits.utils.notifyApiError)
+            .catch(function (error) {
+              LNbits.utils.notifyApiError(error)
+            })
         })
     },
-    exportCSV() {
+    exportCSV: function () {
       LNbits.utils.exportCSV(this.myexTable.columns, this.myex)
     },
     itemsArray(tempId) {
@@ -217,34 +221,38 @@ window.app = Vue.createApp({
     },
     makeItRain() {
       document.getElementById('vue').disabled = true
-      const end = Date.now() + 2 * 1000
-      const colors = ['#FFD700', '#ffffff']
-      confetti({
-        particleCount: 2,
-        angle: 60,
-        spread: 55,
-        origin: {x: 0},
-        colors: colors,
-        zIndex: 999999
-      })
-      confetti({
-        particleCount: 2,
-        angle: 120,
-        spread: 55,
-        origin: {x: 1},
-        colors: colors,
-        zIndex: 999999
-      })
-      if (Date.now() < end) {
-        requestAnimationFrame(frame)
-      } else {
-        document.getElementById('vue').disabled = false
+      var end = Date.now() + 2 * 1000
+      var colors = ['#FFD700', '#ffffff']
+      function frame() {
+        confetti({
+          particleCount: 2,
+          angle: 60,
+          spread: 55,
+          origin: {x: 0},
+          colors: colors,
+          zIndex: 999999
+        })
+        confetti({
+          particleCount: 2,
+          angle: 120,
+          spread: 55,
+          origin: {x: 1},
+          colors: colors,
+          zIndex: 999999
+        })
+        if (Date.now() < end) {
+          requestAnimationFrame(frame)
+        } else {
+          document.getElementById('vue').disabled = false
+        }
       }
+      frame()
     },
     connectWebocket(wallet_id) {
       //////////////////////////////////////////////////
       ///wait for pay action to happen and do a thing////
       ///////////////////////////////////////////////////
+      self = this
       if (location.protocol !== 'http:') {
         localUrl =
           'wss://' +
@@ -263,8 +271,8 @@ window.app = Vue.createApp({
           wallet_id
       }
       this.connection = new WebSocket(localUrl)
-      this.connection.onmessage = e => {
-        this.makeItRain()
+      this.connection.onmessage = function (e) {
+        self.makeItRain()
       }
     }
   },
@@ -272,7 +280,7 @@ window.app = Vue.createApp({
   ///////////////////////////////////////////////////
   //////LIFECYCLE FUNCTIONS RUNNING ON PAGE LOAD/////
   ///////////////////////////////////////////////////
-  created() {
+  created: function () {
     if (this.g.user.wallets.length) {
       this.getMyExtensions()
     }
