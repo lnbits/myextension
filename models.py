@@ -23,7 +23,8 @@ class MyExtension(BaseModel):
     wallet: str
     total: int
 
-    # Below is only needed if you want to add extra fields to the model
+    # Below is only needed if you want to add extra calculated fields to the model,
+    # like getting the links for lnurlpay and lnurlwithdraw fields in this case.
     def lnurlpay(self, req: Request) -> str:
         url = req.url_for("myextension.api_lnurl_pay", myextension_id=self.id)
         url_str = str(url)
