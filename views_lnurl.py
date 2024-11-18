@@ -1,6 +1,4 @@
-# Maybe your extension needs some LNURL stuff.
-# Here is a very simple example of how to do it.
-# Feel free to delete this file if you don't need it.
+# Description: Extensions that use LNURL usually have a few endpoints in views_lnurl.py.
 
 from http import HTTPStatus
 from typing import Optional
@@ -61,7 +59,7 @@ async def api_lnurl_pay_cb(
     if not myextension:
         return {"status": "ERROR", "reason": "No myextension found"}
 
-    _, payment_request = await create_invoice(
+    payment = await create_invoice(
         wallet_id=myextension.wallet,
         amount=int(amount / 1000),
         memo=myextension.name,
@@ -73,7 +71,7 @@ async def api_lnurl_pay_cb(
         },
     )
     return {
-        "pr": payment_request,
+        "pr": payment.bolt11,
         "routes": [],
         "successAction": {"tag": "message", "message": f"Paid {myextension.name}"},
     }

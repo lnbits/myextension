@@ -1,14 +1,16 @@
+# Description: Add your page endpoints here.
+
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import HTMLResponse
 from lnbits.core.models import User
 from lnbits.decorators import check_user_exists
 from lnbits.helpers import template_renderer
 from lnbits.settings import settings
-from starlette.exceptions import HTTPException
-from starlette.responses import HTMLResponse
 
 from .crud import get_myextension
+from .helpers import lnurler
 
 myextension_generic_router = APIRouter()
 
@@ -26,9 +28,9 @@ def myextension_renderer():
 
 
 @myextension_generic_router.get("/", response_class=HTMLResponse)
-async def index(request: Request, user: User = Depends(check_user_exists)):
+async def index(req: Request, user: User = Depends(check_user_exists)):
     return myextension_renderer().TemplateResponse(
-        "myextension/index.html", {"request": request, "user": user.dict()}
+        "myextension/index.html", {"request": req, "user": user.json()}
     )
 
 
@@ -36,18 +38,18 @@ async def index(request: Request, user: User = Depends(check_user_exists)):
 
 
 @myextension_generic_router.get("/{myextension_id}")
-async def myextension(request: Request, myextension_id):
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+async def myextension(req: Request, myextension_id):
+    myex = await get_myextension(myextension_id)
+    if not myex:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
     return myextension_renderer().TemplateResponse(
         "myextension/myextension.html",
         {
-            "request": request,
+            "request": req,
             "myextension_id": myextension_id,
-            "lnurlpay": myextension.lnurlpay,
+            "lnurlpay": lnurler(myex.id, "myextension.api_lnurl_pay", req),
             "web_manifest": f"/myextension/manifest/{myextension_id}.webmanifest",
         },
     )

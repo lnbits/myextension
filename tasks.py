@@ -2,7 +2,6 @@ import asyncio
 
 from lnbits.core.models import Payment
 from lnbits.core.services import websocket_updater
-from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
 
 from .crud import get_myextension, update_myextension
@@ -16,7 +15,7 @@ from .crud import get_myextension, update_myextension
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
-    register_invoice_listener(invoice_queue, get_current_extension_name())
+    register_invoice_listener(invoice_queue, "ext_myextension")
     while True:
         payment = await invoice_queue.get()
         await on_invoice_paid(payment)
@@ -45,7 +44,6 @@ async def on_invoice_paid(payment: Payment) -> None:
 
     # here we could send some data to a websocket on
     # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on
-    # the frontend, which we do with index.html connectWebocket()
 
     some_payment_data = {
         "name": myextension.name,

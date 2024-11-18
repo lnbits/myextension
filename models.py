@@ -1,6 +1,4 @@
-# Data models for your extension
-
-from typing import Optional
+# Description: Pydantic data models dictate what is passed between frontend and backend.
 
 from pydantic import BaseModel
 
@@ -9,16 +7,21 @@ class CreateMyExtensionData(BaseModel):
     name: str
     lnurlpayamount: int
     lnurlwithdrawamount: int
-    wallet: Optional[str] = None
     total: int = 0
 
 
 class MyExtension(BaseModel):
     id: str
-    wallet: str
-    lnurlpayamount: int
     name: str
+    lnurlpayamount: int
     lnurlwithdrawamount: int
+    wallet: str
     total: int
-    lnurlpay: Optional[str]
-    lnurlwithdraw: Optional[str]
+    lnurlpay: str = ""
+    lnurlwithdraw: str = ""
+
+
+class CreatePayment(BaseModel):
+    myextension_id: str
+    amount: int
+    memo: str
