@@ -1,7 +1,6 @@
 # Data models for your extension
 
-from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from fastapi import Request
 from lnurl.core import encode as lnurl_encode
@@ -18,12 +17,13 @@ class CreateMyExtensionData(BaseModel):
 
 class MyExtension(BaseModel):
     id: str
-    wallet: str
-    lnurlpayamount: int
     name: str
+    lnurlpayamount: int
     lnurlwithdrawamount: int
+    wallet: str
     total: int
 
+    # Below is only needed if you want to add extra fields to the model
     def lnurlpay(self, req: Request) -> str:
         url = req.url_for("myextension.api_lnurl_pay", myextension_id=self.id)
         url_str = str(url)
@@ -39,3 +39,14 @@ class MyExtension(BaseModel):
             url_str = url_str.replace("https://", "http://")
 
         return lnurl_encode(url_str)
+
+    def serialize_with_extra_fields(self, req: Request) -> Dict[str, Any]:
+        """Serialize the model and add extra fields."""
+        base_dict = self.dict()
+        base_dict.update(
+            {
+                "lnurlpay": self.lnurlpay(req),
+                "lnurlwithdraw": self.lnurlwithdraw(req),
+            }
+        )
+        return base_dict

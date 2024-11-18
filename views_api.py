@@ -5,6 +5,7 @@ from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import require_admin_key, require_invoice_key
+from lnbits.helpers import urlsafe_short_hash
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -34,19 +35,12 @@ async def api_myextensions(
     req: Request,
     all_wallets: bool = Query(False),
     wallet: WalletTypeInfo = Depends(require_invoice_key),
-):
+) -> list[MyExtension]:
     wallet_ids = [wallet.wallet.id]
     if all_wallets:
-        user = await get_user(key_info.wallet.user)
+        user = await get_user(wallet.wallet.user)
         wallet_ids = user.wallet_ids if user else []
-    return [
-        {
-            **myextension.dict(),
-            "lnurlpay": myextension.lnurlpay(req),
-            "lnurlwithdraw": myextension.lnurlwithdraw(req),
-        }
-        for myextension in await get_myextensions(wallet_ids)
-    ]
+    return await get_myextensions(wallet_ids)
 
 
 ## Get a single record
@@ -56,17 +50,13 @@ async def api_myextensions(
     "/api/v1/myex/{myextension_id}",
     dependencies=[Depends(require_invoice_key)],
 )
-async def api_myextension(myextension_id: str, req: Request):
+async def api_myextension(myextension_id: str, req: Request) -> MyExtension:
     myextension = await get_myextension(myextension_id)
     if not myextension:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    return {
-        **myextension.dict(),
-        "lnurlpay": myextension.lnurlpay(req),
-        "lnurlwithdraw": myextension.lnurlwithdraw(req),
-    }
+    return myextension
 
 
 ## update a record
@@ -74,7 +64,7 @@ async def api_myextension(myextension_id: str, req: Request):
 
 @myextension_api_router.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
-    data: CreateMyExtensionData,
+    data: MyExtension,
     req: Request,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
@@ -85,7 +75,7 @@ async def api_myextension_update(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if key_info.wallet.id != myextension.wallet:
+    if wallet.wallet.id != myextension.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
@@ -94,11 +84,7 @@ async def api_myextension_update(
         setattr(myextension, key, value)
 
     myextension = await update_myextension(data)
-    return {
-        **myextension.dict(),
-        "lnurlpay": myextension.lnurlpay(req),
-        "lnurlwithdraw": myextension.lnurlwithdraw(req),
-    }
+    return myextension
 
 
 ## Create a new record
@@ -108,15 +94,13 @@ async def api_myextension_update(
 async def api_myextension_create(
     data: CreateMyExtensionData,
     req: Request,
-    key_type: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-    data.wallet = data.wallet or key_type.wallet.id
-    myextension = await create_myextension(data)
-    return {
-        **myextension.dict(),
-        "lnurlpay": myextension.lnurlpay(req),
-        "lnurlwithdraw": myextension.lnurlwithdraw(req),
-    }
+    myextension = MyExtension(
+        **data.dict(), wallet=data.wallet or wallet.wallet.id, id=urlsafe_short_hash()
+    )
+    myextension = await create_myextension(myextension)
+    return myextension
 
 
 ## Delete a record
@@ -124,7 +108,7 @@ async def api_myextension_create(
 
 @myextension_api_router.delete("/api/v1/myex/{myextension_id}")
 async def api_myextension_delete(
-    myextension_id: str, key_info: WalletTypeInfo = Depends(require_admin_key)
+    myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
     myextension = await get_myextension(myextension_id)
 
@@ -133,7 +117,7 @@ async def api_myextension_delete(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if myextension.wallet != key_info.wallet.id:
+    if myextension.wallet != wallet.wallet.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
