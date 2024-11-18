@@ -29,7 +29,7 @@ myextension_api_router = APIRouter()
 ## Get all the records belonging to the user
 
 
-@myextension_api_router.get("/api/v1/myex", status_code=HTTPStatus.OK)
+@myextension_api_router.get("/api/v1/myex")
 async def api_myextensions(
     req: Request,
     all_wallets: bool = Query(False),
@@ -37,7 +37,7 @@ async def api_myextensions(
 ):
     wallet_ids = [wallet.wallet.id]
     if all_wallets:
-        user = await get_user(wallet.wallet.user)
+        user = await get_user(key_info.wallet.user)
         wallet_ids = user.wallet_ids if user else []
     return [
         {
@@ -54,7 +54,6 @@ async def api_myextensions(
 
 @myextension_api_router.get(
     "/api/v1/myex/{myextension_id}",
-    status_code=HTTPStatus.OK,
     dependencies=[Depends(require_invoice_key)],
 )
 async def api_myextension(myextension_id: str, req: Request):
@@ -80,11 +79,13 @@ async def api_myextension_update(
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-
     myextension = await get_myextension(myextension_id)
-    assert myextension, "MyExtension couldn't be retrieved"
+    if not myextension:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
+        )
 
-    if wallet.wallet.id != myextension.wallet:
+    if key_info.wallet.id != myextension.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
@@ -123,7 +124,7 @@ async def api_myextension_create(
 
 @myextension_api_router.delete("/api/v1/myex/{myextension_id}")
 async def api_myextension_delete(
-    myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
+    myextension_id: str, key_info: WalletTypeInfo = Depends(require_admin_key)
 ):
     myextension = await get_myextension(myextension_id)
 
@@ -132,13 +133,12 @@ async def api_myextension_delete(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if myextension.wallet != wallet.wallet.id:
+    if myextension.wallet != key_info.wallet.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
 
     await delete_myextension(myextension_id)
-    return "", HTTPStatus.NO_CONTENT
 
 
 # ANY OTHER ENDPOINTS YOU NEED
@@ -162,19 +162,14 @@ async def api_myextension_create_invoice(
     # we create a payment and add some tags,
     # so tasks.py can grab the payment once its paid
 
-    try:
-        payment = await create_invoice(
-            wallet_id=myextension.wallet,
-            amount=amount,
-            memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
-            extra={
-                "tag": "myextension",
-                "amount": amount,
-            },
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR, detail=str(exc)
-        ) from exc
+    payment = await create_invoice(
+        wallet_id=myextension.wallet,
+        amount=amount,
+        memo=f"{memo} to {myextension.name}" if memo else f"{myextension.name}",
+        extra={
+            "tag": "myextension",
+            "amount": amount,
+        },
+    )
 
     return {"payment_hash": payment.payment_hash, "payment_request": payment.bolt11}

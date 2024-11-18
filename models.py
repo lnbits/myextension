@@ -1,5 +1,6 @@
 # Data models for your extension
 
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Request
