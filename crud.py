@@ -1,6 +1,9 @@
+# Description: This file contains the CRUD operations for talking to the database.
+
 from typing import List, Optional, Union
 
 from lnbits.db import Database
+from loguru import logger
 
 from .models import MyExtension
 
@@ -24,6 +27,7 @@ async def get_myextensions(wallet_ids: Union[str, List[str]]) -> List[MyExtensio
     if isinstance(wallet_ids, str):
         wallet_ids = [wallet_ids]
     q = ",".join([f"'{w}'" for w in wallet_ids])
+    logger.debug(q)
     return await db.fetchall(
         f"SELECT * FROM myextension.maintable WHERE wallet IN ({q}) ORDER BY id",
         model=MyExtension,

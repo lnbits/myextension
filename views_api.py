@@ -1,3 +1,5 @@
+# Description: This file contains the extensions API endpoints.
+
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -15,14 +17,10 @@ from .crud import (
     get_myextensions,
     update_myextension,
 )
+from .helpers import lnurler
 from .models import CreateMyExtensionData, MyExtension
 
 myextension_api_router = APIRouter()
-
-
-#######################################
-##### ADD YOUR API ENDPOINTS HERE #####
-#######################################
 
 # Note: we add the lnurl params to returns so the links
 # are generated in the MyExtension model in models.py
@@ -32,15 +30,21 @@ myextension_api_router = APIRouter()
 
 @myextension_api_router.get("/api/v1/myex")
 async def api_myextensions(
-    req: Request,
-    all_wallets: bool = Query(False),
+    req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
     wallet: WalletTypeInfo = Depends(require_invoice_key),
 ) -> list[MyExtension]:
     wallet_ids = [wallet.wallet.id]
-    if all_wallets:
-        user = await get_user(wallet.wallet.user)
-        wallet_ids = user.wallet_ids if user else []
-    return await get_myextensions(wallet_ids)
+    user = await get_user(wallet.wallet.user)
+    wallet_ids = user.wallet_ids if user else []
+    myextensions = await get_myextensions(wallet_ids)
+
+    # Populate lnurlpay and lnurlwithdraw for each instance.
+    # Without the lnurl stuff this wouldnt be needed.
+    for myex in myextensions:
+        myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
+        myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
+
+    return myextensions
 
 
 ## Get a single record
@@ -51,12 +55,17 @@ async def api_myextensions(
     dependencies=[Depends(require_invoice_key)],
 )
 async def api_myextension(myextension_id: str, req: Request) -> MyExtension:
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+    myex = await get_myextension(myextension_id)
+    if not myex:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
-    return myextension
+    # Populate lnurlpay and lnurlwithdraw.
+    # Without the lnurl stuff this wouldnt be needed.
+    myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
+    myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
+
+    return myex
 
 
 ## update a record
@@ -64,27 +73,33 @@ async def api_myextension(myextension_id: str, req: Request) -> MyExtension:
 
 @myextension_api_router.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
+    req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
     data: MyExtension,
-    req: Request,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-    myextension = await get_myextension(myextension_id)
-    if not myextension:
+    myex = await get_myextension(myextension_id)
+    if not myex:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if wallet.wallet.id != myextension.wallet:
+    if wallet.wallet.id != myex.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
 
     for key, value in data.dict().items():
-        setattr(myextension, key, value)
+        setattr(myex, key, value)
 
-    myextension = await update_myextension(data)
-    return myextension
+    myex = await update_myextension(data)
+
+    # Populate lnurlpay and lnurlwithdraw.
+    # Without the lnurl stuff this wouldnt be needed.
+    myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
+    myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
+
+    return myex
 
 
 ## Create a new record
@@ -92,15 +107,19 @@ async def api_myextension_update(
 
 @myextension_api_router.post("/api/v1/myex", status_code=HTTPStatus.CREATED)
 async def api_myextension_create(
+    req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
     data: CreateMyExtensionData,
-    req: Request,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-    myextension = MyExtension(
-        **data.dict(), wallet=data.wallet or wallet.wallet.id, id=urlsafe_short_hash()
-    )
-    myextension = await create_myextension(myextension)
-    return myextension
+    myex = MyExtension(**data.dict(), wallet=wallet.wallet.id, id=urlsafe_short_hash())
+    myex = await create_myextension(myex)
+
+    # Populate lnurlpay and lnurlwithdraw.
+    # Withoutthe lnurl stuff this wouldnt be needed.
+    myex.lnurlpay = lnurler(myex.id, "myextension.api_lnurl_pay", req)
+    myex.lnurlwithdraw = lnurler(myex.id, "myextension.api_lnurl_withdraw", req)
+
+    return myex
 
 
 ## Delete a record
@@ -110,14 +129,14 @@ async def api_myextension_create(
 async def api_myextension_delete(
     myextension_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
 ):
-    myextension = await get_myextension(myextension_id)
+    myex = await get_myextension(myextension_id)
 
-    if not myextension:
+    if not myex:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="MyExtension does not exist."
         )
 
-    if myextension.wallet != wallet.wallet.id:
+    if myex.wallet != wallet.wallet.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
