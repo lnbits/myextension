@@ -5,6 +5,7 @@ from lnbits.core.services import websocket_updater
 from lnbits.tasks import register_invoice_listener
 
 from .crud import get_myextension, update_myextension
+from .models import CreateMyExtensionData
 
 #######################################
 ########## RUN YOUR TASKS HERE ########
@@ -40,7 +41,7 @@ async def on_invoice_paid(payment: Payment) -> None:
         total = myextension.total + payment.amount
 
     myextension.total = total
-    await update_myextension(myextension)
+    await update_myextension(CreateMyExtensionData(**myextension.dict()))
 
     # here we could send some data to a websocket on
     # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on

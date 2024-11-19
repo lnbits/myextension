@@ -34,9 +34,9 @@ async def get_myextensions(wallet_ids: Union[str, List[str]]) -> List[MyExtensio
     )
 
 
-async def update_myextension(data: MyExtension) -> MyExtension:
+async def update_myextension(data: CreateMyExtensionData) -> MyExtension:
     await db.update("myextension.maintable", data)
-    return data
+    return MyExtension(**data.dict())
 
 
 async def delete_myextension(myextension_id: str) -> None:

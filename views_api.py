@@ -92,7 +92,7 @@ async def api_myextension_create(
 @myextension_api_router.put("/api/v1/myex/{myextension_id}")
 async def api_myextension_update(
     req: Request,  # Withoutthe lnurl stuff this wouldnt be needed
-    data: MyExtension,
+    data: CreateMyExtensionData,
     myextension_id: str,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
@@ -140,6 +140,7 @@ async def api_myextension_delete(
         )
 
     await delete_myextension(myextension_id)
+    return
 
 
 # ANY OTHER ENDPOINTS YOU NEED

@@ -108,6 +108,7 @@ window.app = Vue.createApp({
     },
 
     async updateMyExtension(wallet, data) {
+      data.wallet = wallet.id
       await LNbits.api
         .request(
           'PUT',
@@ -126,6 +127,9 @@ window.app = Vue.createApp({
     },
     async deleteMyExtension(tempId) {
       var myextension = _.findWhere(this.myex, {id: tempId})
+      const wallet = _.findWhere(this.g.user.wallets, {
+        id: myextension.wallet
+      })
       await LNbits.utils
         .confirmDialog('Are you sure you want to delete this MyExtension?')
         .onOk(function () {
@@ -133,11 +137,12 @@ window.app = Vue.createApp({
             .request(
               'DELETE',
               '/myextension/api/v1/myex/' + tempId,
-              _.findWhere(this.g.user.wallets, {id: myextension.wallet})
-                .adminkey
+              wallet.adminkey
             )
             .then(() => {
-              this.myex = _.reject(this.myex, obj => obj.id == tempId)
+              this.myex = _.reject(this.myex, function (obj) {
+                return obj.id === myextension.id
+              })
             })
             .catch(error => {
               LNbits.utils.notifyApiError(error)
