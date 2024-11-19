@@ -7,7 +7,6 @@ from lnbits.core.crud import get_user
 from lnbits.core.models import WalletTypeInfo
 from lnbits.core.services import create_invoice
 from lnbits.decorators import require_admin_key, require_invoice_key
-from lnbits.helpers import urlsafe_short_hash
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -77,8 +76,7 @@ async def api_myextension_create(
     data: CreateMyExtensionData,
     wallet: WalletTypeInfo = Depends(require_admin_key),
 ) -> MyExtension:
-    myex = MyExtension(**data.dict(), wallet=wallet.wallet.id, id=urlsafe_short_hash())
-    myex = await create_myextension(myex)
+    myex = await create_myextension(data)
 
     # Populate lnurlpay and lnurlwithdraw.
     # Withoutthe lnurl stuff this wouldnt be needed.

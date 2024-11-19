@@ -10,7 +10,7 @@ async def m001_initial(db):
     await db.execute(
         """
         CREATE TABLE myextension.maintable (
-            id TEXT PRIMARY KEY,
+            id TEXT PRIMARY KEY NOT NULL,
             wallet TEXT NOT NULL,
             name TEXT NOT NULL,
             total INTEGER DEFAULT 0,

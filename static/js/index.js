@@ -95,6 +95,7 @@ window.app = Vue.createApp({
       this.formDialog.show = true
     },
     async createMyExtension(wallet, data) {
+      data.wallet = wallet.id
       await LNbits.api
         .request('POST', '/myextension/api/v1/myex', wallet.adminkey, data)
         .then(response => {
