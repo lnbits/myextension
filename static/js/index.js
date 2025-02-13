@@ -179,12 +179,6 @@ window.app = Vue.createApp({
       // Connecting to our websocket fired in tasks.py
       this.connectWebocket(this.urlDialog.data.id)
 
-      // We can also use this Lnbits core websocket function for getting a payment reaction
-      const wallet = _.findWhere(this.g.user.wallets, {
-        id: this.urlDialog.data.wallet
-      })
-      eventReactionWebocket(wallet.inkey)
-
       this.urlDialog.show = true
     },
     async closeformDialog() {
