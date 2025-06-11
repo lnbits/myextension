@@ -131,59 +131,8 @@
       <q-card-section class="q-pa-none">
         <q-separator></q-separator>
         <q-list>
-          <q-expansion-item
-            expand-separator
-            icon="code"
-            label="API Documentation"
-          >
-            <q-card>
-              <q-card-section>
-                <div class="text-center q-mb-lg">
-                  <a href="/docs#/allowance" target="_blank">
-                    <q-btn unelevated color="primary" icon="open_in_new">
-                      API Documentation
-                    </q-btn>
-                  </a>
-                </div>
-                <q-markup-table separator="cell" flat>
-                  <thead>
-                    <tr>
-                      <th class="text-left">Method</th>
-                      <th class="text-left">Endpoint</th>
-                      <th class="text-left">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td><q-badge color="blue" label="GET" /></td>
-                      <td><code>/allowance/api/v1/allowance</code></td>
-                      <td>List allowances</td>
-                    </tr>
-                    <tr>
-                      <td><q-badge color="blue" label="GET" /></td>
-                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
-                      <td>Get allowance</td>
-                    </tr>
-                    <tr>
-                      <td><q-badge color="green" label="POST" /></td>
-                      <td><code>/allowance/api/v1/allowance</code></td>
-                      <td>Create allowance</td>
-                    </tr>
-                    <tr>
-                      <td><q-badge color="orange" label="PUT" /></td>
-                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
-                      <td>Update allowance</td>
-                    </tr>
-                    <tr>
-                      <td><q-badge color="red" label="DELETE" /></td>
-                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
-                      <td>Delete allowance</td>
-                    </tr>
-                  </tbody>
-                </q-markup-table>
-              </q-card-section>
-            </q-card>
-          </q-expansion-item>
+          {% include "allowance/_api_docs.html" %}
+          <q-separator></q-separator>
           <q-expansion-item
             expand-separator
             icon="help_outline"
