@@ -18,7 +18,7 @@ allowance_api_router = APIRouter()
 
 @allowance_api_router.get("/api/v1/allowance")
 async def api_allowances(wallet = Depends(require_invoice_key)) -> List[Allowance]:
-    return await get_allowances([wallet.id])
+    return await get_allowances([wallet.wallet.id])
 
 @allowance_api_router.get("/api/v1/allowance/{allowance_id}")
 async def api_allowance(allowance_id: str, wallet = Depends(require_invoice_key)) -> Allowance:
@@ -29,7 +29,7 @@ async def api_allowance(allowance_id: str, wallet = Depends(require_invoice_key)
 
 @allowance_api_router.post("/api/v1/allowance", status_code=HTTPStatus.CREATED)
 async def api_allowance_create(data: CreateAllowanceData, wallet = Depends(require_admin_key)) -> Allowance:
-    data.wallet = data.wallet or wallet.id
+    data.wallet = data.wallet or wallet.wallet.id
     return await create_allowance(data)
 
 @allowance_api_router.put("/api/v1/allowance/{allowance_id}")
@@ -38,7 +38,7 @@ async def api_allowance_update(allowance_id: str, data: CreateAllowanceData, wal
     if not allowance:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist.")
     
-    if allowance.wallet != wallet.id:
+    if allowance.wallet != wallet.wallet.id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="Not your allowance.")
     
     data.id = allowance_id
@@ -50,7 +50,7 @@ async def api_allowance_delete(allowance_id: str, wallet = Depends(require_admin
     if not allowance:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist.")
     
-    if allowance.wallet != wallet.id:
+    if allowance.wallet != wallet.wallet.id:
         raise HTTPException(status_code=HTTPStatus.FORBIDDEN, detail="Not your allowance.")
     
     await delete_allowance(allowance_id)

@@ -81,7 +81,7 @@
           dense
           emit-value
           v-model="formDialog.data.wallet"
-          :options="g.user.walletOptions"
+          :options="g.user && g.user.walletOptions ? g.user.walletOptions : []"
           label="Source Wallet *"
           :rules="[val => val || 'Wallet is required']"
         ></q-select>
@@ -234,6 +234,9 @@
 
       getAllowances: function () {
         var self = this
+        if (!this.g.user || !this.g.user.wallets || !this.g.user.wallets.length) {
+          return
+        }
         LNbits.api
           .request(
             'GET',
@@ -264,6 +267,13 @@
         const wallet = _.findWhere(this.g.user.wallets, {
           id: this.formDialog.data.wallet
         })
+        if (!wallet) {
+          this.$q.notify({
+            type: 'negative',
+            message: 'Please select a wallet'
+          })
+          return
+        }
 
         LNbits.api
           .request('POST', '/allowance/api/v1/allowance', wallet.adminkey, data)
@@ -310,7 +320,7 @@
     },
 
     created: function () {
-      if (this.g.user.wallets.length) {
+      if (this.g.user && this.g.user.wallets && this.g.user.wallets.length) {
         this.getAllowances()
       }
     }
