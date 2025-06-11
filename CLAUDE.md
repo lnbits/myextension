@@ -1,0 +1,1 @@
+- You can reference the best practice implementation at https://github.com/lnbits/myextension (although the documentation on there might not be up-to-date)

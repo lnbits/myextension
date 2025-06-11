@@ -1,16 +1,14 @@
 {
-  "name": "allowance",
+  "name": "lnurlp",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "create-allowance": "node create_allowance.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "playwright": "^1.53.0",
     "prettier": "^3.2.5",
     "pyright": "^1.1.358"
   }

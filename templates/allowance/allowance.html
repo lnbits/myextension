@@ -47,24 +47,13 @@
     </q-card>
   </div>
 </div>
-{% endblock %} {% block scripts %}
-<script>
-  Vue.component(VueQrcode.name, VueQrcode)
+{% endblock %} 
 
-  new Vue({
-    el: '#vue',
-    mixins: [windowMixin],
-    data: function () {
-      return {
-        qrValue: '{{lnurlpay}}',
-        myExtensionID: '{{allowance_id}}'
-      }
-    },
-    created: function () {
-      // Will trigger payment reaction when payment received, sent from tasks.py
-      eventReactionWebocket(this.myExtensionID)
-    },
-    methods: {}
-  })
+{% block scripts %}
+<script>
+  // Template variables need to be injected before loading the external script
+  window.lnurlpay = '{{lnurlpay}}';
+  window.allowance_id = '{{allowance_id}}';
 </script>
+<script src="{{ static_url_for('allowance/static', path='js/allowance.js') }}"></script>
 {% endblock %}

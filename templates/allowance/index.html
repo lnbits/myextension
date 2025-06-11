@@ -2,11 +2,11 @@
 {% from "macros.jinja" import window_vars with context %}
 
 {% block page %}
-<div class="row q-col-gutter-md" id="vue">
+<div class="row q-col-gutter-md" id="vue" data-cy="allowance-extension">
   <div class="col-12 col-md-7 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <q-btn unelevated color="primary" @click="openCreateDialog" icon="add"
+        <q-btn unelevated color="primary" @click="openCreateDialog" icon="add" data-cy="new-allowance-btn"
           >New Allowance</q-btn
         >
       </q-card-section>
@@ -162,7 +162,7 @@
   <!-- CREATE/UPDATE ALLOWANCE DIALOG -->
   <q-dialog v-model="formDialog.show" position="top" @hide="closeFormDialog">
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
-      <q-form @submit="saveAllowance" class="q-gutter-md">
+      <q-form @submit.prevent="saveAllowance" class="q-gutter-md" ref="allowanceForm" no-error-focus>
         <div class="text-center q-mb-lg">
           <div class="text-h6">
             <span v-if="formDialog.data.id">Update</span>
@@ -252,8 +252,9 @@
               filled
               dense
               v-model="formDialog.data.start_date"
-              label="Start Date"
+              label="Start Date *"
               type="date"
+              :rules="[val => !!val || 'Start date is required']"
             ></q-input>
           </div>
           <div class="col">
