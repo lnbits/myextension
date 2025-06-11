@@ -6,7 +6,7 @@
   <div class="col-12 col-md-7 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <q-btn unelevated color="primary" @click="formDialog.show = true" icon="add"
+        <q-btn unelevated color="primary" @click="openCreateDialog" icon="add"
           >New Allowance</q-btn
         >
       </q-card-section>
@@ -179,6 +179,21 @@
           placeholder="e.g., Weekly allowance for Alice"
           :rules="[val => !!val || 'Description is required']"
         ></q-input>
+        
+        <q-select
+          filled
+          dense
+          v-model="formDialog.data.wallet"
+          :options="g.user.wallets"
+          option-label="name"
+          option-value="id"
+          emit-value
+          map-options
+          label="Wallet *"
+          :rules="[val => !!val || 'Wallet is required']"
+        >
+          <q-tooltip>The wallet that will send the allowance payments</q-tooltip>
+        </q-select>
         
         <q-input
           filled

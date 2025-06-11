@@ -50,6 +50,14 @@ window.app = Vue.createApp({
       this.formDialog.show = false
       this.formDialog.data = {}
     },
+    openCreateDialog() {
+      this.formDialog.data = {
+        wallet: this.g.user.wallets[0].id,
+        currency: 'sats',
+        active: true
+      }
+      this.formDialog.show = true
+    },
     saveAllowance() {
       console.log('Save allowance:', this.formDialog.data)
     },
