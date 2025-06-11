@@ -32,16 +32,15 @@
         <q-table
           dense
           flat
-          :data="allowances"
-          row-key="id"
+          :rows="allowances"
           :columns="allowanceTable.columns"
-          :pagination="allowanceTable.pagination"
-          :loading="allowanceTable.loading"
+          row-key="id"
+          v-model:pagination="allowanceTable.pagination"
         >
           <template v-slot:header="props">
-            <q-tr :props="props">
+            <q-tr class="text-left" :props="props">
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                ${ col.label }
+                <span v-text="col.label"></span>
               </q-th>
               <q-th auto-width></q-th>
             </q-tr>
@@ -49,7 +48,7 @@
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                <div v-if="col.name == 'id'">
+                <span v-if="col.name == 'id'">
                   <q-btn
                     flat
                     size="xs"
@@ -61,20 +60,18 @@
                   >
                     <q-tooltip>Copy ID</q-tooltip>
                   </q-btn>
-                  ${ col.value }
-                </div>
-                <div v-else-if="col.name == 'amount'">
-                  ${ col.value } ${ props.row.currency }
-                </div>
-                <div v-else-if="col.name == 'status'">
+                  <span v-text="col.value"></span>
+                </span>
+                <span v-else-if="col.name == 'amount'">
+                  <span v-text="col.value"></span> <span v-text="props.row.currency || 'sats'"></span>
+                </span>
+                <span v-else-if="col.name == 'status'">
                   <q-badge
                     :color="props.row.active ? 'positive' : 'grey'"
                     :label="props.row.active ? 'Active' : 'Inactive'"
                   />
-                </div>
-                <div v-else>
-                  ${ col.value }
-                </div>
+                </span>
+                <span v-else v-text="col.value"></span>
               </q-td>
               <q-td auto-width>
                 <q-btn
@@ -167,7 +164,11 @@
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
       <q-form @submit="saveAllowance" class="q-gutter-md">
         <div class="text-center q-mb-lg">
-          <div class="text-h6">${ formDialog.data.id ? 'Update' : 'Create' } Allowance</div>
+          <div class="text-h6">
+            <span v-if="formDialog.data.id">Update</span>
+            <span v-else>Create</span>
+            Allowance
+          </div>
         </div>
         
         <q-input
@@ -271,7 +272,11 @@
             :loading="formDialog.loading"
             type="submit"
             class="q-ml-sm"
-            >${ formDialog.data.id ? 'Update' : 'Create' } Allowance</q-btn
+            >
+            <span v-if="formDialog.data.id">Update</span>
+            <span v-else>Create</span>
+            Allowance
+          </q-btn
           >
         </div>
       </q-form>
@@ -307,58 +312,5 @@
 
 {% block scripts %} 
 {{ window_vars(user) }}
-<script>
-  window.app = Vue.createApp({
-    mixins: [window.windowMixin],
-    delimiters: ['${', '}'],
-    data() {
-      return {
-        allowances: [],
-        allowanceTable: {
-          columns: [
-            {name: 'id', align: 'left', label: 'ID', field: 'id'},
-            {name: 'name', align: 'left', label: 'Description', field: 'name'},
-            {name: 'amount', align: 'right', label: 'Amount', field: 'amount'},
-            {name: 'lightning_address', align: 'left', label: 'Recipient', field: 'lightning_address'},
-            {name: 'frequency_type', align: 'left', label: 'Frequency', field: 'frequency_type'},
-            {name: 'status', align: 'center', label: 'Status', field: 'active'}
-          ],
-          pagination: {
-            rowsPerPage: 10
-          },
-          loading: false
-        },
-        formDialog: {
-          show: false,
-          loading: false,
-          data: {}
-        },
-        qrCodeDialog: {
-          show: false,
-          data: {}
-        }
-      }
-    },
-    methods: {
-      getAllowances() {
-        if (!this.g.user || !this.g.user.wallets || !this.g.user.wallets.length) {
-          return
-        }
-        console.log('Getting allowances...')
-      },
-      closeFormDialog() {
-        this.formDialog.show = false
-        this.formDialog.data = {}
-      },
-      testMethod() {
-        console.log('Test method called')
-      }
-    },
-    created() {
-      if (this.g?.user?.wallets?.length) {
-        this.getAllowances()
-      }
-    }
-  })
-</script>
+<script src="/allowance/static/js/allowance.js"></script>
 {% endblock %}
