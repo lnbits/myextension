@@ -3,11 +3,11 @@
 
 {% block page %}
 <div class="row q-col-gutter-md" id="vue">
-  <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
+  <div class="col-12 col-md-7 q-gutter-y-md">
     <q-card>
       <q-card-section>
-        <q-btn unelevated color="primary" @click="formDialog.show = true"
-          >Create Allowance</q-btn
+        <q-btn unelevated color="primary" @click="formDialog.show = true" icon="add"
+          >New Allowance</q-btn
         >
       </q-card-section>
     </q-card>
@@ -18,6 +18,16 @@
           <div class="col">
             <h5 class="text-subtitle1 q-my-none">Allowances</h5>
           </div>
+          <div class="col-auto">
+            <q-btn
+              flat
+              color="grey"
+              @click="exportCSV"
+              icon="file_download"
+              size="sm"
+              ><q-tooltip>Export to CSV</q-tooltip></q-btn
+            >
+          </div>
         </div>
         <q-table
           dense
@@ -25,15 +35,70 @@
           :data="allowances"
           row-key="id"
           :columns="allowanceTable.columns"
-          :pagination.sync="allowanceTable.pagination"
+          :pagination="allowanceTable.pagination"
+          :loading="allowanceTable.loading"
         >
+          <template v-slot:header="props">
+            <q-tr :props="props">
+              <q-th v-for="col in props.cols" :key="col.name" :props="props">
+                ${ col.label }
+              </q-th>
+              <q-th auto-width></q-th>
+            </q-tr>
+          </template>
           <template v-slot:body="props">
             <q-tr :props="props">
               <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                <div v-if="col.field == 'amount'">${ col.value } ${ props.row.currency }</div>
-                <div v-else>${ col.value }</div>
+                <div v-if="col.name == 'id'">
+                  <q-btn
+                    flat
+                    size="xs"
+                    color="grey"
+                    dense
+                    @click="copyText(col.value)"
+                    icon="content_copy"
+                    class="q-mr-sm"
+                  >
+                    <q-tooltip>Copy ID</q-tooltip>
+                  </q-btn>
+                  ${ col.value }
+                </div>
+                <div v-else-if="col.name == 'amount'">
+                  ${ col.value } ${ props.row.currency }
+                </div>
+                <div v-else-if="col.name == 'status'">
+                  <q-badge
+                    :color="props.row.active ? 'positive' : 'grey'"
+                    :label="props.row.active ? 'Active' : 'Inactive'"
+                  />
+                </div>
+                <div v-else>
+                  ${ col.value }
+                </div>
               </q-td>
               <q-td auto-width>
+                <q-btn
+                  flat
+                  dense
+                  size="xs"
+                  @click="openUpdateDialog(props.row)"
+                  icon="edit"
+                  color="light-blue"
+                  class="q-mr-xs"
+                >
+                  <q-tooltip>Edit allowance</q-tooltip>
+                </q-btn>
+                <q-btn
+                  flat
+                  dense
+                  size="xs"
+                  @click="openQrCodeDialog(props.row)"
+                  icon="qr_code"
+                  color="grey"
+                  class="q-mr-xs"
+                >
+                  <q-tooltip>Show QR Code</q-tooltip>
+                </q-btn>
                 <q-btn
                   flat
                   dense
@@ -52,121 +117,240 @@
     </q-card>
   </div>
 
-  <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
+  <div class="col-12 col-md-5 q-gutter-y-md">
     <q-card>
       <q-card-section>
         <h6 class="text-subtitle1 q-my-none">
+          <q-icon size="1.2em" name="account_balance_wallet" class="q-mr-sm"></q-icon>
           Allowance Extension
         </h6>
         <p>
           Setup recurring payments to lightning addresses. Perfect for allowances, subscriptions, and regular transfers.
         </p>
       </q-card-section>
+      <q-card-section class="q-pa-none">
+        <q-separator></q-separator>
+        <q-list>
+          <q-expansion-item
+            expand-separator
+            icon="code"
+            label="API Documentation"
+          >
+            <q-card>
+              <q-card-section>
+                <div class="text-center q-mb-lg">
+                  <a href="/docs#/allowance" target="_blank">
+                    <q-btn unelevated color="primary" icon="open_in_new">
+                      API Documentation
+                    </q-btn>
+                  </a>
+                </div>
+                <q-markup-table separator="cell" flat>
+                  <thead>
+                    <tr>
+                      <th class="text-left">Method</th>
+                      <th class="text-left">Endpoint</th>
+                      <th class="text-left">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><q-badge color="blue" label="GET" /></td>
+                      <td><code>/allowance/api/v1/allowance</code></td>
+                      <td>List allowances</td>
+                    </tr>
+                    <tr>
+                      <td><q-badge color="blue" label="GET" /></td>
+                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
+                      <td>Get allowance</td>
+                    </tr>
+                    <tr>
+                      <td><q-badge color="green" label="POST" /></td>
+                      <td><code>/allowance/api/v1/allowance</code></td>
+                      <td>Create allowance</td>
+                    </tr>
+                    <tr>
+                      <td><q-badge color="orange" label="PUT" /></td>
+                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
+                      <td>Update allowance</td>
+                    </tr>
+                    <tr>
+                      <td><q-badge color="red" label="DELETE" /></td>
+                      <td><code>/allowance/api/v1/allowance/{id}</code></td>
+                      <td>Delete allowance</td>
+                    </tr>
+                  </tbody>
+                </q-markup-table>
+              </q-card-section>
+            </q-card>
+          </q-expansion-item>
+          <q-expansion-item
+            expand-separator
+            icon="help_outline"
+            label="Usage Guide"
+          >
+            <q-card>
+              <q-card-section>
+                <p class="text-subtitle2 q-mb-sm">How to use Allowances:</p>
+                <ol class="q-pl-md">
+                  <li class="q-mb-sm">Create a new allowance by clicking "New Allowance"</li>
+                  <li class="q-mb-sm">Set the recipient's Lightning address</li>
+                  <li class="q-mb-sm">Configure the amount and currency</li>
+                  <li class="q-mb-sm">Choose the payment frequency (daily, weekly, monthly)</li>
+                  <li class="q-mb-sm">Set start and end dates for the allowance</li>
+                  <li class="q-mb-sm">Save and activate the allowance</li>
+                </ol>
+                <q-separator class="q-my-md"></q-separator>
+                <p class="text-caption text-grey-7">
+                  Allowances will automatically send payments according to your schedule. 
+                  You can pause, edit, or delete them at any time.
+                </p>
+              </q-card-section>
+            </q-card>
+          </q-expansion-item>
+        </q-list>
+      </q-card-section>
     </q-card>
   </div>
 
-  <!-- Create Allowance Dialog -->
+  <!-- CREATE/UPDATE ALLOWANCE DIALOG -->
   <q-dialog v-model="formDialog.show" position="top" @hide="closeFormDialog">
     <q-card class="q-pa-lg q-pt-xl" style="width: 500px">
-      <q-form @submit="createAllowance" class="q-gutter-md">
+      <q-form @submit="saveAllowance" class="q-gutter-md">
+        <div class="text-center q-mb-lg">
+          <div class="text-h6">${ formDialog.data.id ? 'Update' : 'Create' } Allowance</div>
+        </div>
+        
         <q-input
           filled
           dense
           v-model.trim="formDialog.data.name"
-          label="Allowance Name *"
-          placeholder="Weekly allowance"
-          :rules="[val => val && val.length > 0 || 'Name is required']"
+          label="Description *"
+          placeholder="e.g., Weekly allowance for Alice"
+          :rules="[val => !!val || 'Description is required']"
         ></q-input>
         
-        <q-select
-          filled
-          dense
-          emit-value
-          v-model="formDialog.data.wallet"
-          :options="g.user && g.user.walletOptions ? g.user.walletOptions : []"
-          label="Source Wallet *"
-          :rules="[val => val || 'Wallet is required']"
-        ></q-select>
-
         <q-input
           filled
           dense
           v-model.trim="formDialog.data.lightning_address"
           label="Lightning Address *"
-          placeholder="user@domain.com"
-          hint="Lightning address (like user@domain.com) or LNURL-pay link"
-          :rules="[val => val && val.length > 0 || 'Lightning address is required']"
-        ></q-input>
-
+          placeholder="alice@getalby.com"
+          :rules="[
+            val => !!val || 'Lightning address is required',
+            val => val.includes('@') || 'Please enter a valid Lightning address'
+          ]"
+        >
+          <q-tooltip>The Lightning address where payments will be sent</q-tooltip>
+        </q-input>
+        
         <div class="row q-gutter-sm">
-          <div class="col-8">
+          <div class="col">
             <q-input
               filled
               dense
-              type="number"
               v-model.number="formDialog.data.amount"
+              type="number"
               label="Amount *"
-              placeholder="1000"
-              hint="Amount to send with each payment"
               :rules="[val => val > 0 || 'Amount must be greater than 0']"
+              min="1"
+              step="1"
             ></q-input>
           </div>
-          <div class="col">
+          <div class="col-auto" style="width: 100px">
             <q-select
               filled
               dense
-              emit-value
               v-model="formDialog.data.currency"
-              :options="[
-                {label: 'Sats', value: 'sats'},
-                {label: 'GBP', value: 'GBP'},
-                {label: 'USD', value: 'USD'},
-                {label: 'EUR', value: 'EUR'},
-                {label: 'JPY', value: 'JPY'},
-                {label: 'CAD', value: 'CAD'},
-                {label: 'AUD', value: 'AUD'}
-              ]"
-              label="Currency *"
+              :options="['sats', 'USD', 'EUR']"
+              label="Currency"
             ></q-select>
           </div>
         </div>
-
+        
         <q-select
           filled
           dense
-          emit-value
           v-model="formDialog.data.frequency_type"
-          :options="[
-            {label: 'Daily', value: 'daily'},
-            {label: 'Weekly', value: 'weekly'},
-            {label: 'Monthly', value: 'monthly'},
-            {label: 'Yearly', value: 'yearly'}
-          ]"
+          :options="frequencyOptions"
           label="Frequency *"
-          :rules="[val => val || 'Frequency is required']"
+          option-label="label"
+          option-value="value"
+          emit-value
+          map-options
+          :rules="[val => !!val || 'Frequency is required']"
         ></q-select>
-
-        <q-input
-          filled
-          dense
-          v-model.trim="formDialog.data.memo"
-          label="Memo"
-          placeholder="Optional memo for payments"
-        ></q-input>
-
+        
+        <div class="row q-gutter-sm">
+          <div class="col">
+            <q-input
+              filled
+              dense
+              v-model="formDialog.data.start_date"
+              label="Start Date"
+              type="date"
+            ></q-input>
+          </div>
+          <div class="col">
+            <q-input
+              filled
+              dense
+              v-model="formDialog.data.end_date"
+              label="End Date (Optional)"
+              type="date"
+            ></q-input>
+          </div>
+        </div>
+        
+        <q-toggle
+          v-model="formDialog.data.active"
+          label="Active"
+          color="positive"
+        />
+        
         <div class="row q-mt-lg">
+          <q-btn
+            v-close-popup
+            flat
+            color="grey"
+            class="q-ml-auto"
+            >Cancel</q-btn
+          >
           <q-btn
             unelevated
             color="primary"
+            :loading="formDialog.loading"
             type="submit"
-            :disable="!isFormValid"
-            >Create Allowance</q-btn
-          >
-          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
+            class="q-ml-sm"
+            >${ formDialog.data.id ? 'Update' : 'Create' } Allowance</q-btn
           >
         </div>
       </q-form>
+    </q-card>
+  </q-dialog>
+  
+  <!-- QR CODE DIALOG -->
+  <q-dialog v-model="qrCodeDialog.show" position="top">
+    <q-card class="q-pa-lg">
+      <div class="text-center">
+        <div class="text-h6 q-mb-lg">Allowance QR Code</div>
+        <q-responsive :ratio="1" class="q-mx-md" style="max-width: 300px">
+          <qrcode
+            :value="qrCodeDialog.data.lnurl"
+            :options="{width: 800}"
+            class="rounded-borders"
+          ></qrcode>
+        </q-responsive>
+        <div class="q-mt-lg">
+          <q-btn
+            outline
+            color="grey"
+            @click="copyText(qrCodeDialog.data.lnurl)"
+            icon="content_copy"
+            >Copy LNURL</q-btn
+          >
+        </div>
+      </div>
     </q-card>
   </q-dialog>
 </div>
@@ -174,5 +358,58 @@
 
 {% block scripts %} 
 {{ window_vars(user) }}
-<script src="{{ static_url_for('allowance/static', path='js/index.js') }}"></script>
+<script>
+  window.app = Vue.createApp({
+    mixins: [window.windowMixin],
+    delimiters: ['${', '}'],
+    data() {
+      return {
+        allowances: [],
+        allowanceTable: {
+          columns: [
+            {name: 'id', align: 'left', label: 'ID', field: 'id'},
+            {name: 'name', align: 'left', label: 'Description', field: 'name'},
+            {name: 'amount', align: 'right', label: 'Amount', field: 'amount'},
+            {name: 'lightning_address', align: 'left', label: 'Recipient', field: 'lightning_address'},
+            {name: 'frequency_type', align: 'left', label: 'Frequency', field: 'frequency_type'},
+            {name: 'status', align: 'center', label: 'Status', field: 'active'}
+          ],
+          pagination: {
+            rowsPerPage: 10
+          },
+          loading: false
+        },
+        formDialog: {
+          show: false,
+          loading: false,
+          data: {}
+        },
+        qrCodeDialog: {
+          show: false,
+          data: {}
+        }
+      }
+    },
+    methods: {
+      getAllowances() {
+        if (!this.g.user || !this.g.user.wallets || !this.g.user.wallets.length) {
+          return
+        }
+        console.log('Getting allowances...')
+      },
+      closeFormDialog() {
+        this.formDialog.show = false
+        this.formDialog.data = {}
+      },
+      testMethod() {
+        console.log('Test method called')
+      }
+    },
+    created() {
+      if (this.g?.user?.wallets?.length) {
+        this.getAllowances()
+      }
+    }
+  })
+</script>
 {% endblock %}
