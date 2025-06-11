@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 
 class CreateAllowanceData(BaseModel):
+    id: Optional[str] = ""
     name: str
     wallet: Optional[str]
     to_wallet: Optional[str]
@@ -18,9 +19,10 @@ class CreateAllowanceData(BaseModel):
 
 class Allowance(BaseModel):
     id: str
+    name: str
     wallet: Optional[str] = None
     to_wallet: Optional[str] = None
-    amount: int = 0,
+    amount: int = 0
     start_date: datetime
     frequency_type: str
     next_payment_date: datetime
