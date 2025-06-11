@@ -28,7 +28,7 @@ def allowance_renderer():
 @allowance_generic_router.get("/", response_class=HTMLResponse)
 async def index(request: Request, user: User = Depends(check_user_exists)):
     return allowance_renderer().TemplateResponse(
-        "allowance/index.html", {"request": request, "user": user.dict()}
+        "allowance/index.html", {"request": request, "user": user.json()}
     )
 
 
