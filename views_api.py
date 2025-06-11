@@ -2,10 +2,10 @@ from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query, Request
 from lnbits.core.crud import get_user
-from lnbits.core.models import WalletTypeInfo
+# from lnbits.core.models import WalletTypeInfo  # Not available in LNbits v1.0
 from lnbits.core.services import create_invoice
 from lnbits.decorators import (
-    get_key_type,
+    get_wallet_for_key,
     require_admin_key,
     require_invoice_key,
 )
@@ -33,11 +33,11 @@ allowance_api_router = APIRouter()
 @allowance_api_router.get("/api/v1/allowance", status_code=HTTPStatus.OK)
 async def api_allowances(
     all_wallets: bool = Query(False),
-    wallet: WalletTypeInfo = Depends(get_key_type),
+    wallet = Depends(get_wallet_for_key),
 ):
-    wallet_ids = [wallet.wallet.id]
+    wallet_ids = [wallet.id]
     if all_wallets:
-        user = await get_user(wallet.wallet.user)
+        user = await get_user(wallet.user)
         wallet_ids = user.wallet_ids if user else []
     return [allowance.dict() for allowance in await get_allowances(wallet_ids)]
 
@@ -66,8 +66,8 @@ async def api_allowance(allowance_id: str):
 async def api_allowance_update(
     data: CreateAllowanceData,
     allowance_id: str,
-    wallet: WalletTypeInfo = Depends(get_key_type),
-) -> Allowance:
+    wallet = Depends(get_wallet_for_key),
+):
     if not allowance_id:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
@@ -75,7 +75,7 @@ async def api_allowance_update(
     allowance = await get_allowance(allowance_id)
     assert allowance, "Allowance couldn't be retrieved"
 
-    if wallet.wallet.id != allowance.wallet:
+    if wallet.id != allowance.wallet:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your Allowance."
         )
@@ -93,27 +93,11 @@ async def api_allowance_update(
 async def api_allowance_create(
     request: Request,
     data: CreateAllowanceData,
-    key_type: WalletTypeInfo = Depends(require_admin_key),
-) -> Allowance:
-    allowance_id = urlsafe_short_hash()
-    lnurlpay = lnurl_encode(
-        str(request.url_for("allowance.api_lnurl_pay", allowance_id=allowance_id))
-    )
-    lnurlwithdraw = lnurl_encode(
-        str(
-            request.url_for(
-                "allowance.api_lnurl_withdraw", allowance_id=allowance_id
-            )
-        )
-    )
-    data.wallet = data.wallet or key_type.wallet.id
-    myext = Allowance(
-        id=allowance_id,
-        lnurlpay=lnurlpay,
-        lnurlwithdraw=lnurlwithdraw,
-        **data.dict(),
-    )
-    return await create_allowance(myext)
+    wallet = Depends(require_admin_key),
+):
+    data.id = urlsafe_short_hash()
+    data.wallet = data.wallet or wallet.id
+    return await create_allowance(data)
 
 
 ## Delete a record
@@ -121,7 +105,7 @@ async def api_allowance_create(
 
 @allowance_api_router.delete("/api/v1/allowance/{allowance_id}")
 async def api_allowance_delete(
-    allowance_id: str, wallet: WalletTypeInfo = Depends(require_admin_key)
+    allowance_id: str, wallet = Depends(require_admin_key)
 ):
     allowance = await get_allowance(allowance_id)
 
@@ -130,7 +114,7 @@ async def api_allowance_delete(
             status_code=HTTPStatus.NOT_FOUND, detail="Allowance does not exist."
         )
 
-    if allowance.wallet != wallet.wallet.id:
+    if allowance.wallet != wallet.id:
         raise HTTPException(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your Allowance."
         )

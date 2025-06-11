@@ -5,7 +5,7 @@
 
 async def m001_initial(db):
     """
-    Initial templates table.
+    Initial templates table with lightning address and currency support.
     """
     await db.execute(
         """
@@ -13,11 +13,12 @@ async def m001_initial(db):
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             wallet TEXT NOT NULL,
-            to_wallet TEXT NOT NULL,
+            lightning_address TEXT NOT NULL,
             amount INTEGER DEFAULT 0,
+            currency TEXT DEFAULT 'sats',
             start_date TIMESTAMP NOT NULL, -- includes day, month, hour, etc.
             frequency_type TEXT NOT NULL, -- daily, weekly, monthly, yearly
-            next_payment_date DATE NOT NULL,
+            next_payment_date TIMESTAMP NOT NULL,
             memo TEXT
         );
     """
