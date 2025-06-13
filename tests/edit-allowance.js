@@ -139,16 +139,117 @@ const getTestData = () => {
     // Step 5: Submit the form
     console.log('🖱️ Submitting updated form...');
     
+    // Capture the allowance ID for API verification
+    const allowanceId = await page.locator('.q-table tbody tr').first().locator('td').first().textContent();
+    console.log(`📋 Allowance ID for verification: ${allowanceId}`);
+
+    // Capture API key from network requests
+    let apiKey = null;
+    page.on('request', request => {
+      if (request.url().includes('/allowance/api/v1/allowance') && request.headers()['x-api-key']) {
+        apiKey = request.headers()['x-api-key'];
+      }
+    });
+
+    // Get initial state via API before making changes
+    let initialState = null;
+    
+    // Wait for API key to be captured during page load
+    await page.waitForTimeout(2000);
+    
+    if (apiKey) {
+      console.log('🔍 Getting initial allowance state from API...');
+      try {
+        const initialResponse = await page.request.get(`http://localhost:5001/allowance/api/v1/allowance/${allowanceId}`, {
+          headers: { 'X-API-Key': apiKey }
+        });
+        
+        if (initialResponse.ok()) {
+          initialState = await initialResponse.json();
+          console.log('📊 Initial state from API:');
+          console.log(`  Name: ${initialState.name}`);
+          console.log(`  Amount: ${initialState.amount}`);
+          console.log(`  Active: ${initialState.active} (type: ${typeof initialState.active})`);
+          console.log(`  Frequency: ${initialState.frequency_type}`);
+        }
+      } catch (error) {
+        console.log('⚠️ Could not get initial state:', error.message);
+      }
+    }
+    
+    // Monitor network requests
+    const networkResponses = [];
+    page.on('response', response => {
+      if (response.url().includes('/allowance/api/v1/allowance') && response.request().method() === 'PUT') {
+        networkResponses.push({
+          status: response.status(),
+          url: response.url(),
+          method: response.request().method()
+        });
+        console.log(`🌐 PUT request: ${response.status()} ${response.url()}`);
+      }
+    });
+    
+    // Check active toggle state before submission using correct selector
+    await page.waitForTimeout(1000);
+    const toggleElement = page.locator('.q-toggle');
+    const isToggleActive = await toggleElement.getAttribute('aria-checked') === 'true' || 
+                          await toggleElement.locator('.q-toggle__thumb--true').isVisible().catch(() => false);
+    
+    // Also check the Vue debug display
+    const debugText = await page.locator('.text-caption').textContent().catch(() => 'No debug text');
+    
+    console.log(`🔘 Active toggle state before submit: ${isToggleActive ? 'ON' : 'OFF'}`);
+    console.log(`📊 Vue debug display: ${debugText}`);
+    
     try {
-      const submitButton = page.locator('button[type="submit"]:has-text("Update")');
-      await submitButton.click({ timeout: 5000 });
-      console.log('✅ Clicked update button');
+      // Try different button selectors
+      const submitButtons = [
+        'button[type="submit"]:has-text("Update")',
+        'button:has-text("UPDATE ALLOWANCE")',
+        '.q-btn:has-text("UPDATE")',
+        '.q-btn:has-text("Update")'
+      ];
+      
+      let buttonClicked = false;
+      for (const selector of submitButtons) {
+        const button = page.locator(selector);
+        if (await button.isVisible()) {
+          console.log(`🔍 Found submit button: ${selector}`);
+          await button.click();
+          buttonClicked = true;
+          break;
+        }
+      }
+      
+      if (buttonClicked) {
+        console.log('✅ Clicked update button');
+      } else {
+        console.log('❌ No submit button found');
+        // List all buttons
+        const allButtons = await page.locator('button').all();
+        console.log(`🔍 Available buttons: ${allButtons.length}`);
+        for (let i = 0; i < allButtons.length; i++) {
+          const text = await allButtons[i].textContent();
+          console.log(`  Button ${i}: "${text}"`);
+        }
+      }
     } catch (error) {
-      console.log('⚠️ Update button click timeout - form may have already submitted');
+      console.log('⚠️ Update button click error:', error.message);
     }
     
     // Wait for response
     await page.waitForTimeout(5000);
+    
+    // Check network responses
+    if (networkResponses.length > 0) {
+      console.log(`📡 Network responses: ${networkResponses.length}`);
+      networkResponses.forEach(res => {
+        console.log(`  ${res.method} ${res.status} ${res.url}`);
+      });
+    } else {
+      console.log('⚠️ No PUT requests detected - form may not have submitted');
+    }
     
     // Check if form dialog closed (success indicator)
     const dialogStillOpen = await page.locator('.q-dialog').isVisible();
@@ -181,11 +282,95 @@ const getTestData = () => {
         console.log(`  ✓ Updated frequency: ${testData.newFrequency}`, hasNewFrequency ? '✅' : '❌');
       }
       
+      // Step 7: Verify update via API
+      if (apiKey && allowanceId) {
+        console.log('\n🔍 Verifying update via API...');
+        try {
+          const verifyResponse = await page.request.get(`http://localhost:5001/allowance/api/v1/allowance/${allowanceId}`, {
+            headers: { 'X-API-Key': apiKey }
+          });
+          
+          if (verifyResponse.ok()) {
+            const apiData = await verifyResponse.json();
+            console.log('📊 API verification results:');
+            console.log(`  Database ID: ${apiData.id}`);
+            console.log(`  Database name: ${apiData.name}`);
+            console.log(`  Database amount: ${apiData.amount}`);
+            console.log(`  Database active: ${apiData.active} (type: ${typeof apiData.active})`);
+            console.log(`  Database frequency: ${apiData.frequency_type}`);
+            
+            // Verify API data matches expectations
+            const apiNameMatch = apiData.name === testData.newName;
+            const apiAmountMatch = testData.newAmount ? apiData.amount.toString() === testData.newAmount.toString() : true;
+            const apiActiveIsBoolean = typeof apiData.active === 'boolean';
+            
+            console.log('\n📋 API Verification:');
+            console.log(`  ✓ Name in DB: ${apiNameMatch ? '✅' : '❌'} (${apiData.name})`);
+            if (testData.newAmount) {
+              console.log(`  ✓ Amount in DB: ${apiAmountMatch ? '✅' : '❌'} (${apiData.amount})`);
+            }
+            console.log(`  ✓ Active is boolean: ${apiActiveIsBoolean ? '✅' : '❌'}`);
+            console.log(`  ✓ Active value: ${apiData.active}`);
+            
+            if (apiNameMatch && apiAmountMatch && apiActiveIsBoolean) {
+              console.log('\n🎉 API VERIFICATION PASSED - Database updated correctly!');
+            } else {
+              console.log('\n⚠️ API VERIFICATION ISSUES - Check database state');
+            }
+          } else {
+            console.log(`❌ API verification failed: ${verifyResponse.status()}`);
+          }
+        } catch (error) {
+          console.log(`❌ API verification error: ${error.message}`);
+        }
+      } else {
+        console.log('⚠️ API verification skipped - missing API key or allowance ID');
+      }
+      
       await page.screenshot({ path: '/mnt/raid1/GitHub/allowance/tests/test-results/edit-allowance-success.png', fullPage: true });
-      console.log('🎉 ALLOWANCE EDIT TEST PASSED! 🎉');
+      console.log('\n🎉 ALLOWANCE EDIT TEST PASSED! 🎉');
       process.exit(0); // Success
     } else {
       console.log(`❌ Updated allowance "${testData.newName}" not found in table`);
+      
+      // API verification even in failure case to see what's actually in the database
+      if (apiKey && allowanceId) {
+        console.log('\n🔍 Checking database state via API (failure case)...');
+        try {
+          const verifyResponse = await page.request.get(`http://localhost:5001/allowance/api/v1/allowance/${allowanceId}`, {
+            headers: { 'X-API-Key': apiKey }
+          });
+          
+          if (verifyResponse.ok()) {
+            const apiData = await verifyResponse.json();
+            console.log('📊 Actual database state:');
+            console.log(`  Database ID: ${apiData.id}`);
+            console.log(`  Database name: ${apiData.name}`);
+            console.log(`  Database amount: ${apiData.amount}`);
+            console.log(`  Database active: ${apiData.active} (type: ${typeof apiData.active})`);
+            console.log(`  Database frequency: ${apiData.frequency_type}`);
+            
+            // Check if database was updated despite UI showing failure
+            const dbNameChanged = apiData.name !== testData.originalName;
+            const dbAmountChanged = testData.newAmount ? apiData.amount.toString() === testData.newAmount.toString() : false;
+            
+            console.log('🔍 Comparing database changes:');
+            console.log(`  Expected name change: ${testData.originalName} → ${testData.newName}`);
+            console.log(`  Actual name in DB: ${apiData.name}`);
+            console.log(`  Expected amount change: ${initialState ? initialState.amount : 'unknown'} → ${testData.newAmount}`);
+            console.log(`  Actual amount in DB: ${apiData.amount}`);
+            
+            if (dbNameChanged || dbAmountChanged) {
+              console.log('⚠️ Database WAS updated despite UI not reflecting changes!');
+              console.log('   This indicates a UI refresh/display issue, not an API issue');
+            } else {
+              console.log('✅ Database correctly unchanged (update truly failed)');
+            }
+          }
+        } catch (error) {
+          console.log(`❌ API check error: ${error.message}`);
+        }
+      }
       
       // Check if dialog is still open (error state)
       const dialogOpen = await page.locator('.q-dialog').isVisible();

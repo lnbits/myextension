@@ -17,6 +17,8 @@ class CreateAllowanceData(BaseModel):
     frequency_type: str
     next_payment_date: datetime
     memo: str
+    active: bool = True
+    end_date: Optional[datetime] = None
     
     @validator('amount')
     def amount_must_be_positive(cls, v):
@@ -35,6 +37,8 @@ class Allowance(BaseModel):
     frequency_type: str
     next_payment_date: datetime
     memo: str
+    active: bool = True
+    end_date: Optional[datetime] = None
     
     @validator('amount')
     def amount_must_be_positive(cls, v):

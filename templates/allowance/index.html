@@ -63,7 +63,10 @@
                   <span v-text="col.value"></span>
                 </span>
                 <span v-else-if="col.name == 'amount'">
-                  <span v-text="col.value"></span> <span v-text="props.row.currency || 'sats'"></span>
+                  <span v-text="col.value"></span> <span>{% raw %}{{ props.row.currency || 'sats' }}{% endraw %}</span>
+                  <span v-if="props.row.frequency_type == 'per_second'" class="text-caption text-grey">
+                    (every 10 seconds, 6 payments total)
+                  </span>
                 </span>
                 <span v-else-if="col.name == 'status'">
                   <q-badge
@@ -84,17 +87,6 @@
                   class="q-mr-xs"
                 >
                   <q-tooltip>Edit allowance</q-tooltip>
-                </q-btn>
-                <q-btn
-                  flat
-                  dense
-                  size="xs"
-                  @click="openQrCodeDialog(props.row)"
-                  icon="qr_code"
-                  color="grey"
-                  class="q-mr-xs"
-                >
-                  <q-tooltip>Show QR Code</q-tooltip>
                 </q-btn>
                 <q-btn
                   flat
@@ -165,9 +157,8 @@
       <q-form @submit.prevent="saveAllowance" class="q-gutter-md" ref="allowanceForm" no-error-focus>
         <div class="text-center q-mb-lg">
           <div class="text-h6">
-            <span v-if="formDialog.data.id">Update</span>
-            <span v-else>Create</span>
-            Allowance
+            <span v-if="formDialog.data.id">Update Allowance</span>
+            <span v-else>Create Allowance</span>
           </div>
         </div>
         
@@ -220,7 +211,8 @@
               :rules="[val => val > 0 || 'Amount must be greater than 0']"
               min="1"
               step="1"
-            ></q-input>
+            >
+            </q-input>
           </div>
           <div class="col-auto" style="width: 100px">
             <q-select
@@ -245,6 +237,15 @@
           map-options
           :rules="[val => !!val || 'Frequency is required']"
         ></q-select>
+        
+        <div v-if="formDialog.data.frequency_type == 'per_second'" class="q-pa-sm bg-yellow-1 text-dark rounded-borders">
+          <q-icon name="info" color="warning" class="q-mr-sm" />
+          <span class="text-caption">
+            Streaming payments will send {% raw %}{{ formDialog.data.amount || 0 }}{% endraw %} sats every 10 seconds.
+            After 60 seconds (6 payments), the allowance will automatically stop.
+            Total: {% raw %}{{ (formDialog.data.amount || 0) * 6 }}{% endraw %} sats.
+          </span>
+        </div>
         
         <div class="row q-gutter-sm">
           <div class="col">
@@ -289,9 +290,8 @@
             type="submit"
             class="q-ml-sm"
             >
-            <span v-if="formDialog.data.id">Update</span>
-            <span v-else>Create</span>
-            Allowance
+            <span v-if="formDialog.data.id">Update Allowance</span>
+            <span v-else>Create Allowance</span>
           </q-btn
           >
         </div>
@@ -299,30 +299,6 @@
     </q-card>
   </q-dialog>
   
-  <!-- QR CODE DIALOG -->
-  <q-dialog v-model="qrCodeDialog.show" position="top">
-    <q-card class="q-pa-lg">
-      <div class="text-center">
-        <div class="text-h6 q-mb-lg">Allowance QR Code</div>
-        <q-responsive :ratio="1" class="q-mx-md" style="max-width: 300px">
-          <qrcode
-            :value="qrCodeDialog.data.lnurl"
-            :options="{width: 800}"
-            class="rounded-borders"
-          ></qrcode>
-        </q-responsive>
-        <div class="q-mt-lg">
-          <q-btn
-            outline
-            color="grey"
-            @click="copyText(qrCodeDialog.data.lnurl)"
-            icon="content_copy"
-            >Copy LNURL</q-btn
-          >
-        </div>
-      </div>
-    </q-card>
-  </q-dialog>
 </div>
 {% endblock %} 
 

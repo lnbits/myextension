@@ -17,9 +17,12 @@ async def m001_initial(db):
             amount INTEGER DEFAULT 0,
             currency TEXT DEFAULT 'sats',
             start_date TIMESTAMP NOT NULL, -- includes day, month, hour, etc.
-            frequency_type TEXT NOT NULL, -- daily, weekly, monthly, yearly
+            frequency_type TEXT NOT NULL, -- daily, weekly, monthly, yearly, per_second
             next_payment_date TIMESTAMP NOT NULL,
-            memo TEXT
+            memo TEXT,
+            active BOOLEAN DEFAULT TRUE,
+            end_date TIMESTAMP
         );
     """
     )
+

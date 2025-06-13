@@ -1,11 +1,15 @@
 import asyncio
+from datetime import datetime, timedelta
+from typing import List
 
 from lnbits.core.models import Payment
-from lnbits.core.services import websocket_updater
+from lnbits.core.services import websocket_updater, pay_invoice
 from lnbits.helpers import get_current_extension_name
 from lnbits.tasks import register_invoice_listener
+from loguru import logger
 
-from .crud import get_allowance, update_allowance
+from .crud import get_allowance, update_allowance, get_all_active_allowances
+from .models import Allowance
 
 #######################################
 ########## RUN YOUR TASKS HERE ########
@@ -52,3 +56,73 @@ async def on_invoice_paid(payment: Payment) -> None:
     }
 
     await websocket_updater(allowance_id, str(some_payment_data))
+
+
+async def check_and_process_allowances():
+    """
+    Background task to check and process scheduled allowance payments.
+    Runs every 10 seconds.
+    """
+    while True:
+        try:
+            logger.info("🔄 Checking allowances for scheduled payments...")
+            
+            # Get all active allowances
+            allowances = await get_all_active_allowances()
+            current_time = datetime.utcnow()
+            
+            for allowance in allowances:
+                # Skip inactive allowances
+                if not getattr(allowance, 'active', True):
+                    continue
+                    
+                # Check if end_date has passed
+                if hasattr(allowance, 'end_date') and allowance.end_date:
+                    if current_time > allowance.end_date:
+                        logger.info(f"⏰ Allowance {allowance.name} has expired")
+                        allowance.active = False
+                        await update_allowance(allowance)
+                        continue
+                
+                # Check if payment is due
+                if current_time >= allowance.next_payment_date:
+                    logger.info(f"💸 Processing payment for allowance: {allowance.name}")
+                    
+                    try:
+                        # Create invoice to lightning address
+                        # NOTE: In a real implementation, you would:
+                        # 1. Convert lightning address to LNURL
+                        # 2. Get invoice from the LNURL endpoint
+                        # 3. Pay the invoice
+                        
+                        # For now, we'll log the payment attempt
+                        logger.info(f"💰 Would pay {allowance.amount} {allowance.currency} to {allowance.lightning_address}")
+                        
+                        # Update next payment date
+                        if allowance.frequency_type == 'minutely':
+                            allowance.next_payment_date = current_time + timedelta(minutes=1)
+                        elif allowance.frequency_type == 'hourly':
+                            allowance.next_payment_date = current_time + timedelta(hours=1)
+                        elif allowance.frequency_type == 'daily':
+                            allowance.next_payment_date = current_time + timedelta(days=1)
+                        elif allowance.frequency_type == 'weekly':
+                            allowance.next_payment_date = current_time + timedelta(weeks=1)
+                        elif allowance.frequency_type == 'monthly':
+                            allowance.next_payment_date = current_time + timedelta(days=30)
+                        elif allowance.frequency_type == 'yearly':
+                            allowance.next_payment_date = current_time + timedelta(days=365)
+                        
+                        await update_allowance(allowance)
+                        logger.info(f"✅ Next payment scheduled for: {allowance.next_payment_date}")
+                        
+                    except Exception as e:
+                        logger.error(f"❌ Error processing allowance {allowance.name}: {str(e)}")
+            
+        except Exception as e:
+            logger.error(f"❌ Error in allowance scheduler: {str(e)}")
+        
+        # Check every 10 seconds
+        await asyncio.sleep(10)
+
+
+# This will be started by __init__.py when the extension loads

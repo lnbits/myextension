@@ -68,3 +68,11 @@ async def delete_allowance(allowance_id: str) -> None:
     await db.execute(
         "DELETE FROM allowance.maintable WHERE id = :id", {"id": allowance_id}
     )
+
+
+async def get_all_active_allowances() -> List[Allowance]:
+    """Get all active allowances for scheduled processing"""
+    return await db.fetchall(
+        "SELECT * FROM allowance.maintable WHERE active = true ORDER BY next_payment_date",
+        model=Allowance,
+    )

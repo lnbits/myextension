@@ -25,14 +25,12 @@ window.app = Vue.createApp({
         loading: false,
         data: {}
       },
-      qrCodeDialog: {
-        show: false,
-        data: {}
-      },
       frequencyOptions: [
-        {label: 'Daily', value: 'daily'},
+        {label: 'Minutely', value: 'minutely'},
+        {label: 'Hourly', value: 'hourly'},
         {label: 'Weekly', value: 'weekly'},
-        {label: 'Monthly', value: 'monthly'}
+        {label: 'Monthly', value: 'monthly'},
+        {label: 'Yearly', value: 'yearly'}
       ]
     }
   },
@@ -78,15 +76,25 @@ window.app = Vue.createApp({
     saveAllowance() {
       console.log('🔥 saveAllowance called')
       console.log('📊 Form data:', this.formDialog.data)
+      console.log('🔘 Active field at submission:', this.formDialog.data.active, '(type:', typeof this.formDialog.data.active, ')')
       
       // Check Quasar form validation first
       if (this.$refs.allowanceForm) {
+        console.log('📋 Checking Quasar form validation...')
         const isValid = this.$refs.allowanceForm.validate()
         console.log('📋 Quasar form validation result:', isValid)
         if (!isValid) {
-          console.log('❌ Quasar validation failed')
+          console.log('❌ Quasar validation failed - checking form errors')
+          // Log validation errors if available
+          const errors = this.$refs.allowanceForm.$el.querySelectorAll('.q-field--error')
+          console.log('❌ Form errors found:', errors.length)
+          errors.forEach((error, i) => {
+            console.log(`❌ Error ${i}:`, error.textContent)
+          })
           return
         }
+      } else {
+        console.log('⚠️ No form ref found')
       }
       
       // Validate required fields
@@ -124,6 +132,8 @@ window.app = Vue.createApp({
       }
       
       // Transform data to match backend model
+      console.log('🔥 Processing active field:', data.active, '(type:', typeof data.active, ')')
+      
       const backendData = {
         id: data.id,
         name: data.name,  // Keep name field as expected by backend
@@ -135,7 +145,18 @@ window.app = Vue.createApp({
         frequency_type: data.frequency_type,
         start_date: new Date(data.start_date).toISOString(),  // Convert to ISO datetime
         next_payment_date: this.calculateNextPaymentDate(data.start_date, data.frequency_type),
-        active: data.active !== false  // Default to true
+        active: Boolean(data.active),  // Ensure boolean type
+        end_date: data.end_date ? new Date(data.end_date).toISOString() : null
+      }
+      
+      console.log('🔥 Backend data active field:', backendData.active, '(type:', typeof backendData.active, ')')
+      
+      // For minutely payments, set end date based on duration
+      if (data.frequency_type === 'minutely') {
+        // Default to 5 minutes for testing
+        const endDate = new Date(data.start_date)
+        endDate.setMinutes(endDate.getMinutes() + 5)
+        backendData.end_date = endDate.toISOString()
       }
       
       console.log('📤 Final data to send:', backendData)
@@ -196,12 +217,88 @@ window.app = Vue.createApp({
       }
     },
     openUpdateDialog(row) {
-      this.formDialog.data = {...row}
+      console.log('🔄 openUpdateDialog called with row:', row)
+      console.log('🔍 Row active field:', row.active, '(type:', typeof row.active, ')')
+      
+      // Reset form dialog first
+      this.formDialog.data = {}
+      
+      // Deep clone the row data to avoid reference issues
+      const clonedData = JSON.parse(JSON.stringify(row))
+      
+      // Set data piece by piece to ensure reactivity
+      this.formDialog.data = {
+        id: clonedData.id,
+        name: clonedData.name,
+        wallet: clonedData.wallet,
+        lightning_address: clonedData.lightning_address,
+        amount: clonedData.amount,
+        currency: clonedData.currency,
+        frequency_type: clonedData.frequency_type,
+        next_payment_date: clonedData.next_payment_date,
+        memo: clonedData.memo,
+        end_date: clonedData.end_date
+      }
+      
+      console.log('📋 After cloning:', this.formDialog.data)
+      
+      // Ensure start_date is in proper format for date input
+      if (this.formDialog.data.start_date) {
+        const date = new Date(this.formDialog.data.start_date)
+        this.formDialog.data.start_date = date.toISOString().split('T')[0]
+        console.log('📅 Converted start_date to:', this.formDialog.data.start_date)
+      } else {
+        // Default to today if no start_date exists
+        const today = new Date().toISOString().split('T')[0]
+        this.formDialog.data.start_date = today
+        console.log('📅 No start_date found, defaulted to today:', today)
+      }
+      
+      // Ensure end_date is in proper format for date input if it exists
+      if (this.formDialog.data.end_date) {
+        const endDate = new Date(this.formDialog.data.end_date)
+        this.formDialog.data.end_date = endDate.toISOString().split('T')[0]
+        console.log('📅 Converted end_date to:', this.formDialog.data.end_date)
+      }
+      
+      // Set active field separately to ensure proper reactivity
+      const originalActive = row.active
+      
+      // Force active to true for editing (since we're editing an existing allowance)
+      // More robust boolean conversion but default to true for edits
+      let activeValue = true  // Default for editing
+      
+      if (originalActive !== null && originalActive !== undefined) {
+        if (typeof originalActive === 'boolean') {
+          activeValue = originalActive
+        } else if (typeof originalActive === 'number') {
+          activeValue = originalActive !== 0
+        } else if (typeof originalActive === 'string') {
+          activeValue = originalActive.toLowerCase() === 'true' || originalActive === '1'
+        } else {
+          activeValue = Boolean(originalActive)
+        }
+      }
+      
+      // Set active with Vue.set to ensure reactivity (Vue 3 compatibility)
+      this.$set ? this.$set(this.formDialog.data, 'active', activeValue) : (this.formDialog.data.active = activeValue)
+      
+      console.log('🔘 Active conversion:')
+      console.log('  Original value:', originalActive, '(type:', typeof originalActive, ')')
+      console.log('  Converted to:', this.formDialog.data.active, '(type:', typeof this.formDialog.data.active, ')')
+      console.log('  Forced to true for editing:', activeValue)
+      
+      console.log('✅ Final form data:', JSON.stringify(this.formDialog.data, null, 2))
       this.formDialog.show = true
-    },
-    openQrCodeDialog(row) {
-      this.qrCodeDialog.data = row
-      this.qrCodeDialog.show = true
+      
+      // Force Vue to update and ensure toggle reflects the active state
+      this.$nextTick(() => {
+        console.log('🔄 Vue nextTick - form data:', this.formDialog.data)
+        console.log('🔄 Vue nextTick - active value:', this.formDialog.data.active)
+        
+        // Force reactivity update for the active field
+        this.$forceUpdate()
+      })
     },
     deleteAllowance(id) {
       const allowance = _.findWhere(this.allowances, {id: id})
@@ -238,18 +335,30 @@ window.app = Vue.createApp({
       navigator.clipboard.writeText(text)
       this.$q.notify({message: 'Copied to clipboard', type: 'positive'})
     },
+    toggleActive() {
+      console.log('🔄 Manual toggle called - before:', this.formDialog.data.active)
+      this.formDialog.data.active = !this.formDialog.data.active
+      console.log('🔄 Manual toggle called - after:', this.formDialog.data.active)
+      this.$forceUpdate()
+    },
     calculateNextPaymentDate(startDate, frequencyType) {
       const date = new Date(startDate)
       
       switch (frequencyType) {
-        case 'daily':
-          date.setDate(date.getDate() + 1)
+        case 'minutely':
+          date.setMinutes(date.getMinutes() + 1)
+          break
+        case 'hourly':
+          date.setHours(date.getHours() + 1)
           break
         case 'weekly':
           date.setDate(date.getDate() + 7)
           break
         case 'monthly':
           date.setMonth(date.getMonth() + 1)
+          break
+        case 'yearly':
+          date.setFullYear(date.getFullYear() + 1)
           break
         default:
           date.setDate(date.getDate() + 7) // Default to weekly
