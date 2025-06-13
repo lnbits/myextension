@@ -7,6 +7,17 @@ const { chromium } = require('playwright');
   try {
     console.log('🚀 Starting enable allowance extension test...');
     
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.log('❌ Browser console error:', msg.text());
+      }
+    });
+    
+    page.on('pageerror', error => {
+      console.log('💥 Page error:', error.message);
+    });
+    
     // Step 1: Login first (reuse login logic)
     console.log('📝 Step 1: Logging in as admin...');
     await page.goto('http://localhost:5001/');
@@ -109,8 +120,35 @@ const { chromium } = require('playwright');
       
       // Try to navigate to the allowance extension to verify it works
       console.log('📝 Step 5: Verifying extension access...');
-      await page.goto('http://localhost:5001/allowance/');
-      await page.waitForTimeout(5000); // Give more time for extension to load
+      
+      // Check cookies before navigation
+      const cookies = await page.context().cookies();
+      console.log('🍪 Number of cookies:', cookies.length);
+      
+      // Track all responses during navigation
+      page.on('response', response => {
+        console.log(`📡 Response: ${response.status()} ${response.url()}`);
+      });
+      
+      const response = await page.goto('http://localhost:5001/allowance/');
+      console.log('📡 Final Response status:', response.status());
+      console.log('📡 Final Response URL:', response.url());
+      
+      // Check for any redirects
+      const finalUrl = page.url();
+      if (finalUrl !== 'http://localhost:5001/allowance/') {
+        console.log('🔄 Page was redirected to:', finalUrl);
+      }
+      
+      // Check if we got redirected to login
+      if (response.url().includes('first_install') || response.url().includes('login')) {
+        console.log('🔄 Got redirected to login - session lost');
+      }
+      
+      // Wait for page to load and capture any errors
+      await page.waitForTimeout(3000);
+      console.log('📝 Waiting for Vue app to initialize...');
+      await page.waitForTimeout(2000);
       
       const allowancePageLoaded = await page.locator('text="New Allowance"').isVisible();
       if (allowancePageLoaded) {
@@ -119,7 +157,33 @@ const { chromium } = require('playwright');
         process.exit(0); // Success
       } else {
         console.log('⚠️ Extension enabled but page not accessible');
-        await page.screenshot({ path: 'tests/test-results/enable-allowance-access-failed.png', fullPage: true });
+        console.log('📝 Checking for Vue app elements...');
+        
+        // Check what's actually on the page
+        const pageTitle = await page.title();
+        console.log('📄 Page title:', pageTitle);
+        
+        const vueElement = await page.locator('#vue').isVisible();
+        console.log('🔍 Vue element present:', vueElement);
+        
+        const bodyText = await page.locator('body').textContent();
+        if (bodyText.includes('ALLOWANCE EXTENSION TEST - BASIC TEMPLATE')) {
+          console.log('✓ Basic template is rendering!');
+        } else {
+          console.log('✗ Basic template not rendering');
+        }
+        
+        if (bodyText.includes('Missing user ID or access token')) {
+          console.log('🔑 Authentication issue - session lost');
+        } else if (bodyText.includes('first_install')) {
+          console.log('🔄 Redirected to setup page');  
+        } else if (bodyText.includes('WINDOW_SETTINGS')) {
+          console.log('🏠 Getting LNBits homepage instead of extension');
+        }
+        
+        console.log('📝 Page content preview:', bodyText.substring(0, 300));
+        
+        await page.screenshot({ path: 'tests/test-results/enable-allowance-debug.png', fullPage: true });
         process.exit(1); // Failure
       }
     } else {

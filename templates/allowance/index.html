@@ -328,12 +328,5 @@
 
 {% block scripts %} 
 {{ window_vars(user) }}
-<script>
-  // Small delay to ensure Quasar and other dependencies are loaded
-  setTimeout(function() {
-    const script = document.createElement('script');
-    script.src = '/allowance/static/js/allowance.js';
-    document.body.appendChild(script);
-  }, 50);
-</script>
+<script src="/allowance/static/js/allowance.js"></script>
 {% endblock %}

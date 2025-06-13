@@ -13,7 +13,7 @@ const { chromium } = require('playwright');
     await page.waitForLoadState('networkidle');
     
     // Check if we need to switch to login screen
-    const createAccountVisible = await page.locator('text=Create Account').isVisible();
+    const createAccountVisible = await page.locator('text=Create Account').first().isVisible();
     if (createAccountVisible) {
       await page.click('text=Login');
       await page.waitForTimeout(2000);

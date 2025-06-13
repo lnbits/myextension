@@ -1,6 +1,6 @@
 /* globals Quasar, Vue, _, windowMixin, LNbits, LOCALE */
 
-Vue.createApp({
+window.app = Vue.createApp({
   el: '#vue',
   mixins: [window.windowMixin],
   data() {
@@ -223,4 +223,4 @@ Vue.createApp({
       this.getAllowances()
     }
   }
-}).mount('#vue')
+})
