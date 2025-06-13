@@ -1,0 +1,37 @@
+name: Claude Issue Fix
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude-fix:
+    if: contains(github.event.comment.body, '@claude-ai')
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Claude Code Action
+      uses: anthropics/claude-code-action@v1
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Process issue fix request
+      env:
+        ISSUE_NUMBER: ${{ github.event.issue.number }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}  
+        ISSUE_BODY: ${{ github.event.issue.body }}
+        COMMENT_BODY: ${{ github.event.comment.body }}
+      run: |
+        echo "Claude, please fix issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}"
+        echo "Issue description: ${ISSUE_BODY}"
+        echo "Comment: ${COMMENT_BODY}"
+        echo "Please create a PR to resolve this issue."
