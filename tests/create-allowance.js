@@ -1,11 +1,68 @@
 const { chromium } = require('playwright');
+const fs = require('fs');
+const path = require('path');
+
+// Get test data from command line args or default values
+const getTestData = () => {
+  // Check if test data file exists (for parameterized runs)
+  const testDataPath = path.join(__dirname, 'current-test-data.json');
+  if (fs.existsSync(testDataPath)) {
+    return JSON.parse(fs.readFileSync(testDataPath, 'utf8'));
+  }
+  
+  // Check command line arguments
+  const args = process.argv.slice(2);
+  if (args.length >= 4) {
+    return {
+      name: args[0],
+      lightningAddress: args[1], 
+      amount: parseInt(args[2]),
+      frequency: args[3]
+    };
+  }
+  
+  // Default test data
+  return {
+    name: 'Pocket money',
+    lightningAddress: 'muddledsmell08@walletofsatoshi.com',
+    amount: 100,
+    frequency: 'weekly'
+  };
+};
 
 (async () => {
-  const browser = await chromium.launch({ headless: false, slowMo: 1000 });
+  const testData = getTestData();
+  console.log(`🎯 Testing allowance: ${testData.name} (${testData.amount} sats ${testData.frequency})`);
+  
+  const browser = await chromium.launch({ headless: true, slowMo: 500 });
   const page = await browser.newPage();
 
   try {
     console.log('🚀 Starting create allowance test...');
+    
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.log('❌ Browser console error:', msg.text());
+      }
+    });
+    
+    page.on('pageerror', error => {
+      console.log('💥 Page error:', error.message);
+    });
+    
+    // Monitor network requests
+    page.on('request', request => {
+      if (request.url().includes('/allowance/api/v1/allowance') && request.method() === 'POST') {
+        console.log('📤 POST request to create allowance:', request.url());
+      }
+    });
+    
+    page.on('response', response => {
+      if (response.url().includes('/allowance/api/v1/allowance') && response.request().method() === 'POST') {
+        console.log(`📥 POST response: ${response.status()} ${response.url()}`);
+      }
+    });
     
     // Step 1: Login first
     console.log('📝 Step 1: Logging in as admin...');
@@ -41,46 +98,210 @@ const { chromium } = require('playwright');
       // Fill the form
       console.log('📝 Filling allowance form...');
       
-      // Description
-      await page.fill('input[placeholder*="allowance"], input[placeholder*="Description"]', 'Pocket money');
+      // Wait for form inputs to appear
+      await page.waitForSelector('input', { timeout: 10000 });
       
-      // Lightning address
-      await page.fill('input[placeholder*="@"], input[placeholder*="Lightning"]', 'muddledsmell08@walletofsatoshi.com');
+      // Check which inputs are visible and fillable
+      const visibleInputs = await page.evaluate(() => {
+        const inputs = Array.from(document.querySelectorAll('input'));
+        return inputs.map((input, i) => ({
+          index: i,
+          type: input.type,
+          placeholder: input.placeholder,
+          visible: input.offsetParent !== null,
+          disabled: input.disabled
+        }));
+      });
+      console.log('📝 Input analysis:', JSON.stringify(visibleInputs, null, 2));
       
-      // Amount
-      await page.fill('input[type="number"]', '100');
+      // Fill only visible, enabled inputs
+      const fillableInputs = visibleInputs.filter(input => input.visible && !input.disabled);
+      console.log('📝 Fillable inputs:', fillableInputs.length);
       
-      // Frequency - click dropdown and select Weekly
-      await page.click('.q-select:has-text("Frequency")');
-      await page.waitForTimeout(1000);
-      await page.click('.q-item:has-text("Weekly")');
+      // Check for Vue mounted instance
+      const vueDebug = await page.evaluate(() => {
+        const debug = {};
+        
+        // Check if Vue app is mounted
+        const vueEl = document.querySelector('#vue');
+        if (vueEl && vueEl.__vue_app__) {
+          debug.vueElFound = true;
+          debug.vueApp = true;
+          
+          // Try to get the component instance
+          const instance = vueEl.__vue_app__._instance;
+          if (instance && instance.proxy) {
+            debug.instanceFound = true;
+            debug.instanceKeys = Object.keys(instance.proxy);
+            if (instance.proxy.formDialog) {
+              debug.formDialogFound = true;
+              debug.formDialogData = instance.proxy.formDialog.data;
+            }
+          }
+        }
+        
+        // Also check global window properties for Vue instances
+        debug.windowKeys = Object.keys(window).filter(k => k.includes('vue') || k.includes('Vue'));
+        
+        return debug;
+      });
+      console.log('🔍 Vue instance debug:', JSON.stringify(vueDebug, null, 2));
+      
+      // Fill form fields using DOM manipulation with test data
+      await page.fill('input[placeholder*="Weekly allowance"]', testData.name);
+      console.log(`✅ Filled description field: ${testData.name}`);
+      
+      await page.fill('input[placeholder*="alice@getalby.com"]', testData.lightningAddress);
+      console.log(`✅ Filled lightning address field: ${testData.lightningAddress}`);
+      
+      await page.fill('input[type="number"]', testData.amount.toString());
+      console.log(`✅ Filled amount field: ${testData.amount}`);
+      
+      // Handle frequency dropdown - use the specific frequency select
+      const frequencySelect = page.locator('.q-select').filter({ hasText: 'Frequency' });
+      await frequencySelect.click();
+      
+      // Capitalize first letter for UI matching
+      const frequencyLabel = testData.frequency.charAt(0).toUpperCase() + testData.frequency.slice(1);
+      await page.waitForSelector(`.q-item:has-text("${frequencyLabel}")`);
+      await page.click(`.q-item:has-text("${frequencyLabel}")`);
+      console.log(`✅ Selected frequency: ${frequencyLabel}`);
+      
+      await page.waitForTimeout(1000); // Let Vue update
       
       // Take screenshot of filled form
-      await page.screenshot({ path: 'tests/test-results/form-filled.png', fullPage: true });
+      await page.screenshot({ path: '/mnt/raid1/GitHub/allowance/tests/test-results/form-filled.png', fullPage: true });
       console.log('📸 Form screenshot saved');
+      
+      // Check what Vue globals are available
+      const vueGlobals = await page.evaluate(() => {
+        const globals = {};
+        if (typeof window.app !== 'undefined') globals.app = 'found';
+        if (typeof window.Vue !== 'undefined') globals.Vue = 'found';
+        if (typeof window.windowMixin !== 'undefined') globals.windowMixin = 'found';
+        return globals;
+      });
+      console.log('🔍 Available Vue globals:', vueGlobals);
+      
+      // Check Vue form data after setting
+      const vueFormData = await page.evaluate(() => {
+        // Try different ways to access the Vue app
+        if (window.app && window.app.formDialog) {
+          return JSON.stringify(window.app.formDialog.data, null, 2);
+        }
+        return 'Vue app not accessible';
+      });
+      console.log('📊 Vue form data after setting:', vueFormData);
+      
+      // Wait a moment for Vue reactivity
+      await page.waitForTimeout(1000);
       
       // Submit the form
       console.log('🖱️ Submitting form...');
-      await page.click('button:has-text("Create Allowance")');
       
-      // Wait for response
+      // Try multiple ways to submit the form
+      console.log('🎯 Attempting form submission...');
+      
+      // Method 1: Trigger form submit event
+      await page.evaluate(() => {
+        const form = document.querySelector('form');
+        if (form) {
+          console.log('Found form, triggering submit event');
+          form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
+      });
+      
+      await page.waitForTimeout(1000);
+      
+      // Method 2: Click submit button
+      try {
+        const submitButton = page.locator('button[type="submit"]:has-text("Create")');
+        await submitButton.click({ timeout: 5000 });
+        console.log('✅ Clicked submit button');
+      } catch (error) {
+        console.log('⚠️ Submit button click timeout - form may have already submitted');
+      }
+      
+      // Wait for response - check if we got a successful POST response
       await page.waitForTimeout(5000);
       
-      // Check if allowance was created successfully
-      const allowanceRow = page.locator('tr:has-text("Pocket money")');
-      if (await allowanceRow.isVisible()) {
-        console.log('✅ SUCCESS! Allowance "Pocket money" created successfully!');
+      // Check if form dialog closed (success indicator)
+      const dialogStillOpen = await page.locator('.q-dialog').isVisible();
+      if (!dialogStillOpen) {
+        console.log('🎉 Form dialog closed - likely successful submission!');
+      }
+      
+      // Check if there are any validation error messages
+      const errorMessages = await page.locator('.q-field--error, .q-form--error, .text-negative, .q-field-bottom .q-field__messages').allTextContents();
+      if (errorMessages.length > 0) {
+        console.log('🚨 Validation errors found:', errorMessages);
+      }
+      
+      // Check console for any Vue/JavaScript errors
+      const consoleErrors = await page.evaluate(() => {
+        // Return any errors that might have occurred
+        return window.lastError || 'No errors captured';
+      });
+      console.log('🐛 Console errors:', consoleErrors);
+      
+      // Check if the start date field has a value (it's required) - only if form still open
+      try {
+        const startDateValue = await page.inputValue('input[type="date"]', { timeout: 5000 });
+        console.log('📅 Start date value:', startDateValue);
+      } catch (error) {
+        console.log('📅 Could not read start date - form may have closed');
+      }
+      
+      // Check all form field values to see what's missing
+      const formValues = await page.evaluate(() => {
+        const inputs = document.querySelectorAll('input, select');
+        const values = {};
+        inputs.forEach((input, i) => {
+          if (input.type !== 'checkbox') {
+            values[`${input.type}_${i}`] = input.value;
+          }
+        });
+        return values;
+      });
+      console.log('📋 Current form values:', formValues);
+      
+      // Check if loading state is still active (only if form still exists)
+      try {
+        const loadingButton = page.locator('button[type="submit"]');
+        const isLoading = await loadingButton.getAttribute('loading', { timeout: 3000 });
+        if (isLoading) {
+          console.log('⏳ Form still loading...');
+          await page.waitForTimeout(3000);
+        }
+      } catch (error) {
+        console.log('⚠️ Submit button no longer available - form likely closed');
+      }
+      
+      // Check if allowance was created successfully by looking at the table
+      console.log('🔍 Checking for allowance in table...');
+      
+      // Wait for table to update
+      await page.waitForTimeout(2000);
+      
+      const allowanceRows = page.locator(`tr:has-text("${testData.name}")`);
+      const allowanceCount = await allowanceRows.count();
+      
+      if (allowanceCount > 0) {
+        console.log(`✅ SUCCESS! Found ${allowanceCount} allowance(s) with "${testData.name}" in table!`);
         
-        // Verify details
-        const hasAmount = await allowanceRow.locator('text=100').isVisible();
-        const hasAddress = await allowanceRow.locator('text=muddledsmell08@walletofsatoshi.com').isVisible();
-        const hasFrequency = await allowanceRow.locator('text=weekly').isVisible();
+        // Verify details from the first row - use more specific selectors to avoid conflicts
+        const firstRow = allowanceRows.first();
+        const rowText = await firstRow.textContent();
+        const hasAmount = rowText.includes(testData.amount.toString());
+        const hasAddress = rowText.includes(testData.lightningAddress);
+        const hasFrequency = rowText.includes(testData.frequency);
         
-        console.log('  ✓ Amount: 100 sats', hasAmount ? '✅' : '❌');
-        console.log('  ✓ Address: muddledsmell08@walletofsatoshi.com', hasAddress ? '✅' : '❌');
-        console.log('  ✓ Frequency: weekly', hasFrequency ? '✅' : '❌');
+        console.log(`  ✓ Amount: ${testData.amount} sats`, hasAmount ? '✅' : '❌');
+        console.log(`  ✓ Address: ${testData.lightningAddress}`, hasAddress ? '✅' : '❌');
+        console.log(`  ✓ Frequency: ${testData.frequency}`, hasFrequency ? '✅' : '❌');
         
-        await page.screenshot({ path: 'tests/test-results/create-allowance-success.png', fullPage: true });
+        await page.screenshot({ path: '/mnt/raid1/GitHub/allowance/tests/test-results/create-allowance-success.png', fullPage: true });
+        console.log('🎉 ALLOWANCE CREATION TEST PASSED! 🎉');
         process.exit(0); // Success
       } else {
         console.log('❌ Allowance not found in table');

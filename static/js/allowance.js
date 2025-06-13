@@ -123,14 +123,29 @@ window.app = Vue.createApp({
         console.log('📅 Set start_date to:', data.start_date)
       }
       
-      console.log('📤 Final data to send:', data)
+      // Transform data to match backend model
+      const backendData = {
+        id: data.id,
+        name: data.name,  // Keep name field as expected by backend
+        memo: data.name,  // Also include memo field
+        wallet: data.wallet,
+        lightning_address: data.lightning_address,
+        amount: parseInt(data.amount),
+        currency: data.currency || 'sats',
+        frequency_type: data.frequency_type,
+        start_date: new Date(data.start_date).toISOString(),  // Convert to ISO datetime
+        next_payment_date: this.calculateNextPaymentDate(data.start_date, data.frequency_type),
+        active: data.active !== false  // Default to true
+      }
       
-      if (data.id) {
+      console.log('📤 Final data to send:', backendData)
+      
+      if (backendData.id) {
         console.log('🔄 Updating existing allowance')
-        this.updateAllowance(wallet, data)
+        this.updateAllowance(wallet, backendData)
       } else {
         console.log('➕ Creating new allowance')
-        this.createAllowance(wallet, data)
+        this.createAllowance(wallet, backendData)
       }
     },
     createAllowance(wallet, data) {
@@ -141,7 +156,10 @@ window.app = Vue.createApp({
           this.getAllowances()
           this.formDialog.show = false
           this.resetFormData()
-          LNbits.utils.notifyApiSuccess('Allowance created successfully')
+          this.$q.notify({
+            type: 'positive',
+            message: 'Allowance created successfully'
+          })
         })
         .catch(err => {
           LNbits.utils.notifyApiError(err)
@@ -158,7 +176,10 @@ window.app = Vue.createApp({
           this.getAllowances()
           this.formDialog.show = false
           this.resetFormData()
-          LNbits.utils.notifyApiSuccess('Allowance updated successfully')
+          this.$q.notify({
+            type: 'positive',
+            message: 'Allowance updated successfully'
+          })
         })
         .catch(err => {
           LNbits.utils.notifyApiError(err)
@@ -216,6 +237,25 @@ window.app = Vue.createApp({
     copyText(text) {
       navigator.clipboard.writeText(text)
       this.$q.notify({message: 'Copied to clipboard', type: 'positive'})
+    },
+    calculateNextPaymentDate(startDate, frequencyType) {
+      const date = new Date(startDate)
+      
+      switch (frequencyType) {
+        case 'daily':
+          date.setDate(date.getDate() + 1)
+          break
+        case 'weekly':
+          date.setDate(date.getDate() + 7)
+          break
+        case 'monthly':
+          date.setMonth(date.getMonth() + 1)
+          break
+        default:
+          date.setDate(date.getDate() + 7) // Default to weekly
+      }
+      
+      return date.toISOString()
     }
   },
   created() {
