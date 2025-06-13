@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
   const page = await browser.newPage();
 
   try {
-    console.log('🚀 Login and test allowance...');
+    console.log('🚀 Testing allowance creation...');
     
     // Listen for console messages
     page.on('console', msg => {
@@ -38,8 +38,18 @@ const { chromium } = require('playwright');
     await page.screenshot({ path: 'logged-in.png', fullPage: true });
     console.log('📸 Logged in screenshot saved');
     
-    // Now try to access allowance extension
-    await page.goto('http://localhost:5001/allowance/');
+    // Dismiss any dialogs that might be open
+    try {
+      await page.click('button:has-text("I UNDERSTAND")');
+      console.log('✅ Dismissed login credentials dialog');
+      await page.waitForTimeout(1000);
+    } catch (e) {
+      console.log('ℹ️ No dialog to dismiss');
+    }
+    
+    // Now try to access allowance extension by clicking the sidebar link
+    console.log('🎯 Clicking Allowance extension in sidebar...');
+    await page.click('text=Allowance');
     await page.waitForTimeout(3000);
     
     await page.screenshot({ path: 'allowance-logged-in.png', fullPage: true });

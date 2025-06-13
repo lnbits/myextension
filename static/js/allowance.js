@@ -1,6 +1,6 @@
 /* globals Quasar, Vue, _, windowMixin, LNbits, LOCALE */
 
-window.app = Vue.createApp({
+Vue.createApp({
   el: '#vue',
   mixins: [window.windowMixin],
   data() {
@@ -183,10 +183,35 @@ window.app = Vue.createApp({
       this.qrCodeDialog.show = true
     },
     deleteAllowance(id) {
-      console.log('Delete allowance:', id)
+      const allowance = _.findWhere(this.allowances, {id: id})
+      if (!allowance) return
+      
+      LNbits.utils
+        .confirmDialog('Are you sure you want to delete this allowance?')
+        .onOk(() => {
+          const wallet = _.findWhere(this.g.user.wallets, {id: allowance.wallet})
+          if (!wallet) return
+          
+          LNbits.api
+            .request(
+              'DELETE',
+              '/allowance/api/v1/allowance/' + id,
+              wallet.adminkey
+            )
+            .then(() => {
+              this.allowances = _.reject(this.allowances, obj => obj.id == id)
+              this.$q.notify({
+                type: 'positive',
+                message: 'Allowance deleted successfully!'
+              })
+            })
+            .catch(err => {
+              LNbits.utils.notifyApiError(err)
+            })
+        })
     },
     exportCSV() {
-      console.log('Export CSV')
+      LNbits.utils.exportCSV(this.allowanceTable.columns, this.allowances, 'allowances')
     },
     copyText(text) {
       navigator.clipboard.writeText(text)
