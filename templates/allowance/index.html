@@ -306,4 +306,11 @@
 {% block scripts %} 
 {{ window_vars(user) }}
 <script src="/allowance/static/js/allowance.js"></script>
+<style>
+/* Override Quasar's q-gutter-sm margin on first child to prevent unwanted indentation */
+.q-gutter-sm > *:first-child,
+.q-gutter-x-sm > *:first-child {
+  margin-left: 0 !important;
+}
+</style>
 {% endblock %}
