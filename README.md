@@ -28,6 +28,8 @@ Ready to start hacking? Once you've forked this extension, you can incorporate f
 
 1. Re-initialize a git repo with `git init && git add . && git commit -m "initial commit"`
 
+1. Push to your github repo
+
 1. [!IMPORTANT] **you must create a release** *in your github repo* in order for it to show up in your lnbits extensions!
 
 1. Start up your lnbits server and go to the Settings -> EXTENSIONS and add your manifest to the extension sources. It should be `https://raw.githubusercontent.com/<yourgithubusernaame>/<yourextensionname>/main/manifest.json` (going to  this link should show your updated manifest) and **save**. ![Extension Sources](https://i.imgur.com/MUGwAU3.png)
