@@ -47,7 +47,7 @@ def myextension_start():
 __all__ = [
     "db",
     "myextension_ext",
-    "myextension_static_files",
     "myextension_start",
+    "myextension_static_files",
     "myextension_stop",
 ]
