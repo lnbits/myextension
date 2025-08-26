@@ -1,34 +1,42 @@
-[tool.poetry]
+[project]
 name = "myextension"
 version = "0.0.0"
+requires-python = ">=3.10,<3.13"
 description = "Eightball is a simple API that allows you to create a random number generator."
-authors = ["benarc", "dni <dni@lnbits.com>"]
+authors = [{name = "benarc"}, {name = "dni", email = "dni@lnbits.com"}]
 
-[tool.poetry.dependencies]
-python = "^3.10 | ^3.9"
-lnbits = {version = "*", allow-prereleases = true}
-mypy = "^1.13.0"
+dependencies = [ "lnbits>1" ]
 
-[tool.poetry.group.dev.dependencies]
-black = "^24.3.0"
-pytest-asyncio = "^0.21.0"
-pytest = "^7.3.2"
-mypy = "^1.5.1"
-pre-commit = "^3.2.2"
-ruff = "^0.3.2"
-pytest-md = "^0.2.0"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.uv]
+dev-dependencies = [
+    "black",
+    "pytest-asyncio",
+    "pytest",
+    "mypy",
+    "pre-commit",
+    "ruff",
+]
 
 [tool.mypy]
+exclude = "(nostr/*)"
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+warn_untyped_fields = true
+
 [[tool.mypy.overrides]]
 module = [
   "lnbits.*",
+  "lnurl.*",
   "loguru.*",
   "fastapi.*",
   "pydantic.*",
+  "pyqrcode.*",
+  "shortuuid.*",
+  "httpx.*",
 ]
 ignore_missing_imports = "True"
 
@@ -44,7 +52,9 @@ line-length = 88
 [tool.ruff]
 # Same as Black. + 10% rule of black
 line-length = 88
-
+exclude = [
+    "nostr",
+]
 
 [tool.ruff.lint]
 # Enable:
@@ -59,8 +69,7 @@ line-length = 88
 # RUF - ruff
 # B - bugbear
 select = ["F", "E", "W", "I", "A", "C", "N", "UP", "RUF", "B"]
-# UP007: pyupgrade: use X | Y instead of Optional. (python3.10)
-ignore = ["UP007"]
+ignore = ["C901"]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]
@@ -72,12 +81,13 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # needed for pydantic
 [tool.ruff.lint.pep8-naming]
 classmethod-decorators = [
+    "validator",
     "root_validator",
 ]
 
 # Ignore unused imports in __init__.py files.
 # [tool.ruff.lint.extend-per-file-ignores]
-# "views_api.py" = ["F401"]
+# "__init__.py" = ["F401", "F403"]
 
 # [tool.ruff.lint.mccabe]
 # max-complexity = 10

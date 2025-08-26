@@ -1,7 +1,6 @@
 # Description: Extensions that use LNURL usually have a few endpoints in views_lnurl.py.
 
 from http import HTTPStatus
-from typing import Optional
 
 import shortuuid
 from fastapi import APIRouter, Query, Request
@@ -120,8 +119,8 @@ async def api_lnurl_withdraw(
 )
 async def api_lnurl_withdraw_cb(
     myextension_id: str,
-    pr: Optional[str] = None,
-    k1: Optional[str] = None,
+    pr: str | None = None,
+    k1: str | None = None,
 ):
     assert k1, "k1 is required"
     assert pr, "pr is required"
