@@ -5,7 +5,7 @@ window.app = Vue.createApp({
   data: function () {
     return {
       invoiceAmount: 10,
-      qrValue: 'lnurlpay',
+      qrValue: '',
       myex: [],
       myexTable: {
         columns: [
@@ -172,14 +172,9 @@ window.app = Vue.createApp({
       this.formDialog.data.currency = myextension.currency
       this.formDialog.show = true
     },
-    makeLNURL(url) {
-      const bytes = new TextEncoder().encode(url)
-      const bech32 = NostrTools.nip19.encodeBytes('lnurl', bytes)
-      return bech32.toUpperCase()
-    },
     async openUrlDialog(tempid) {
       this.urlDialog.data = _.findWhere(this.myex, {id: tempid})
-      this.qrValue = this.makeLNURL(this.urlDialog.data.lnurlpay)
+      this.qrValue = this.urlDialog.data.lnurlpay
 
       // Connecting to our websocket fired in tasks.py
       this.connectWebocket(this.urlDialog.data.id)
