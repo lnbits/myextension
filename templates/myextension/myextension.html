@@ -10,11 +10,11 @@
         <div class="text-center">
           <a class="text-secondary" href="lightning:{{ lnurl }}">
             <q-responsive :ratio="1" class="q-mx-md">
-              <lnbits-qrcode
-                :value="qrValue"
-                :options="{width: 800}"
-                class="rounded-borders"
-              ></lnbits-qrcode>
+        <lnbits-qrcode v-if="qrValue.beginsWith('lnbc')" :value="qrValue" :show-buttons="false"></lnbits-qrcode>
+        <lnbits-qrcode-lnurl
+        v-else
+        :url="qrValue"
+      ></lnbits-qrcode-lnurl>
             </q-responsive>
           </a>
         </div>
