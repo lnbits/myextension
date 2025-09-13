@@ -198,8 +198,8 @@
           v-if="qrValue && qrValue.startsWith('lnbc')"
           :value="qrValue"
           :show-buttons="false"
-        />
-        <lnbits-qrcode-lnurl v-else :url="qrValue" />
+        ></lnbits-qrcode>
+        <lnbits-qrcode-lnurl v-else :url="qrValue"></lnbits-qrcode-lnurl>
       </q-responsive>
       <center><q-btn label="copy" @click="copyText(qrValue)"></q-btn></center>
 
