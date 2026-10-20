@@ -41,7 +41,7 @@ async def on_invoice_paid(payment: Payment) -> None:
         total = myextension.total + payment.amount
 
     myextension.total = total
-    await update_myextension(CreateMyExtensionData(**myextension.dict()))
+    await update_myextension(CreateMyExtensionData(**myextension.model_dump()))
 
     # here we could send some data to a websocket on
     # wss://<your-lnbits>/api/v1/ws/<myextension_id> and then listen to it on

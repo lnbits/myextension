@@ -107,7 +107,7 @@ async def api_myextension_update(
             status_code=HTTPStatus.FORBIDDEN, detail="Not your MyExtension."
         )
 
-    for key, value in data.dict().items():
+    for key, value in data.model_dump().items():
         setattr(myex, key, value)
 
     myex = await update_myextension(data)

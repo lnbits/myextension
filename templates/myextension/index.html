@@ -193,12 +193,11 @@
 
   <q-dialog v-model="urlDialog.show" position="top">
     <q-card class="q-pa-lg q-pt-xl lnbits__dialog-card">
-
-        <lnbits-qrcode
-          v-if="qrValue && qrValue.startsWith('lnbc')"
-          :value="qrValue"
-        ></lnbits-qrcode>
-        <lnbits-qrcode-lnurl v-else :url="qrValue"></lnbits-qrcode-lnurl>
+      <lnbits-qrcode
+        v-if="qrValue && qrValue.startsWith('lnbc')"
+        :value="qrValue"
+      ></lnbits-qrcode>
+      <lnbits-qrcode-lnurl v-else :url="qrValue"></lnbits-qrcode-lnurl>
 
       <q-separator></q-separator>
 
