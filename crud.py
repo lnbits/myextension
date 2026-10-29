@@ -12,7 +12,7 @@ db = Database("ext_myextension")
 async def create_myextension(data: CreateMyExtensionData) -> MyExtension:
     data.id = urlsafe_short_hash()
     await db.insert("myextension.maintable", data)
-    return MyExtension(**data.dict())
+    return MyExtension(**data.model_dump())
 
 
 async def get_myextension(myextension_id: str) -> MyExtension | None:
@@ -35,7 +35,7 @@ async def get_myextensions(wallet_ids: str | list[str]) -> list[MyExtension]:
 
 async def update_myextension(data: CreateMyExtensionData) -> MyExtension:
     await db.update("myextension.maintable", data)
-    return MyExtension(**data.dict())
+    return MyExtension(**data.model_dump())
 
 
 async def delete_myextension(myextension_id: str) -> None:

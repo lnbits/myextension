@@ -30,7 +30,7 @@ def myextension_renderer():
 @myextension_generic_router.get("/", response_class=HTMLResponse)
 async def index(req: Request, user: User = Depends(check_user_exists)):
     return myextension_renderer().TemplateResponse(
-        "myextension/index.html", {"request": req, "user": user.json()}
+        "myextension/index.html", {"request": req, "user": user.model_dump_json()}
     )
 
 

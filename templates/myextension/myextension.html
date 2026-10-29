@@ -9,11 +9,11 @@
       <q-card-section class="q-pa-none">
         <div class="text-center">
           <a class="text-secondary" href="lightning:{{ lnurl }}">
-        <lnbits-qrcode
-          v-if="qrValue && qrValue.startsWith('lnbc')"
-          :value="qrValue"
-        ></lnbits-qrcode>
-        <lnbits-qrcode-lnurl v-else :url="qrValue"></lnbits-qrcode-lnurl>
+            <lnbits-qrcode
+              v-if="qrValue && qrValue.startsWith('lnbc')"
+              :value="qrValue"
+            ></lnbits-qrcode>
+            <lnbits-qrcode-lnurl v-else :url="qrValue"></lnbits-qrcode-lnurl>
           </a>
         </div>
       </q-card-section>
